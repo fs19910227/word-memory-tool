@@ -1,5 +1,6 @@
 package com.fs.tool.memory.command;
 
+import com.alibaba.excel.EasyExcel;
 import com.fs.tool.memory.dao.model.Code;
 import com.fs.tool.memory.model.Query;
 import com.fs.tool.memory.service.CodeManager;
@@ -12,6 +13,7 @@ import org.springframework.shell.standard.ShellOption;
 import org.springframework.util.StringUtils;
 
 import javax.validation.constraints.Size;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -38,7 +40,6 @@ public class ManagementCommandImpl implements ManagementCommand {
                 }
             }
         }
-        codeManager.init();
         System.out.println("init data");
     }
 
@@ -165,4 +166,18 @@ public class ManagementCommandImpl implements ManagementCommand {
         }
     }
 
+    @Override
+    @ShellMethod(value = "Delete all", key = "drop")
+    public void deleteAll() {
+        codeManager.clearAll();
+        System.out.println("清除所有数据");
+    }
+
+    @Override
+    @ShellMethod(value = "Excel import,需遵循导入模板", key = "import")
+    public void importData(@ShellOption(value = "-f", defaultValue = "") String file) {
+        String fileName = file.equals("") ? "字母联想表.xlsx" : file;
+        InputStream resourceAsStream = ManagementCommandImpl.class.getClassLoader().getResourceAsStream(fileName);
+        EasyExcel.read(resourceAsStream, null, new DataListener(letters, codeManager)).sheet().doRead();
+    }
 }

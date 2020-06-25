@@ -28,4 +28,10 @@ public interface ManagementCommand {
 
     @ShellMethod(value = "记忆测试,记忆所有没有记住的编码", key = {"t", "test"})
     void test();
+
+    @ShellMethod(value = "Delete all", key = "drop")
+    void deleteAll();
+
+    @ShellMethod(value = "Excel import", key = "import")
+    void importData(@ShellOption(value = "-f", defaultValue = "") String file);
 }

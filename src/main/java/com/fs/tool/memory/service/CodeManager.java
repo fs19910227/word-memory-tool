@@ -40,6 +40,11 @@ public class CodeManager {
         return !posMap.isEmpty();
     }
 
+    public void clearAll() {
+        posMap.clear();
+        codeRepository.deleteAll();
+    }
+
     public void saveAll() {
         List<Code> collect = posMap.values().stream()
                 .flatMap(map -> map.values().stream()).collect(Collectors.toList());
@@ -47,6 +52,8 @@ public class CodeManager {
     }
 
     public void save(Code code) {
+        posMap.putIfAbsent(code.getFirst(), new HashMap<>());
+        posMap.get(code.getFirst()).put(code.getSecond(), code);
         codeRepository.save(code);
     }
 
