@@ -2,8 +2,10 @@ package com.fs.tool.memory.service;
 
 import com.fs.tool.memory.dao.model.Code;
 import com.fs.tool.memory.dao.repository.CodeRepository;
+import com.fs.tool.memory.model.Query;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
 import java.util.*;
@@ -46,6 +48,41 @@ public class CodeManager {
 
     public void save(Code code) {
         codeRepository.save(code);
+    }
+
+    /**
+     * 条件查询
+     *
+     * @return
+     */
+    public List<Code> queryByCondition(Query query) {
+        return posMap.values().stream()
+                .flatMap(m -> m.values().stream())
+                //记住条件
+                .filter(info -> {
+                    Boolean isRemembered = query.getIsRemembered();
+                    return isRemembered == null || info.isRemembered() == isRemembered;
+                })
+                //联想词条件
+                .filter(info -> {
+                    Boolean hasWord = query.getHasWord();
+                    if (hasWord == null) {
+                        return true;
+                    } else {
+                        return hasWord == !StringUtils.isEmpty(info.getWord());
+                    }
+                })
+                //word
+                .filter(info -> {
+                    String source = query.getCode();
+                    String target = info.getCode();
+                    if (source == null) {
+                        return true;
+                    } else {
+                        return target.startsWith(source);
+                    }
+                })
+                .collect(Collectors.toList());
     }
 
     /**

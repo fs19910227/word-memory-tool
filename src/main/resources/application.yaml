@@ -7,9 +7,8 @@ spring:
   datasource:
     driverClassName: org.h2.Driver
     #db文件位置
-    url: jdbc:h2:file:./db/.h2/dbc2m;AUTO_SERVER=TRUE
+    url: jdbc:h2:file:${db.location};AUTO_SERVER=TRUE
   h2:
     console:
       path: /h2
       enabled: true
-

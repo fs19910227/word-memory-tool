@@ -36,6 +36,6 @@ public class Code {
 
     @Override
     public String toString() {
-        return code.toUpperCase() + ":" + word;
+        return code.toUpperCase() + ":" + word + "---" + (remembered ? "以记住" : "未记住");
     }
 }
