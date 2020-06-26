@@ -27,7 +27,7 @@ public interface ManagementCommand {
                 @ShellOption(defaultValue = "true", value = {"-sync", "-s"}, help = "每次录入自动同步到数据库，默认为true") boolean autoSync);
 
     @ShellMethod(value = "记忆测试,记忆所有没有记住的编码", key = {"t", "test"})
-    void test();
+    void test(@ShellOption(defaultValue = "", value = {"-r", "-row"}, help = "指定行进行测试") @Size(min = 0, max = 1) String row);
 
     @ShellMethod(value = "Delete all", key = "drop")
     void deleteAll();

@@ -136,12 +136,13 @@ public class ManagementCommandImpl implements ManagementCommand {
 
     @Override
     @ShellMethod(value = "记忆测试,记忆所有没有记住的编码", key = {"t", "test"})
-    public void test() {
+    public void test(@ShellOption(defaultValue = "", value = {"-r", "-row"}, help = "指定行进行测试") @Size(min = 0, max = 1) String row) {
         Query query = new Query();
         query.setIsRemembered(false);
         query.setHasWord(true);
+        query.setCode(row.toUpperCase());
         List<Code> codes = codeManager.queryByCondition(query);
-        System.out.println("随机测试模式,输入正确的单词下次不会出现");
+        System.out.println("简单测试模式,输入正确的单词下次不会出现");
         for (Code code : codes) {
             System.out.println(String.format("当前编码:%s,请输入联想词.(退出请输入:q,跳过请输入:n)", code.getCode()));
             Scanner scan = new Scanner(System.in);
