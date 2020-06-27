@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 
@@ -33,9 +34,25 @@ public class Code {
      * 记住了么
      */
     private boolean remembered;
+    /**
+     * 通过测试的次数
+     */
+    @Column()
+    private Integer passTime = 0;
+    /**
+     * 总测试的次数
+     */
+    @Column()
+    private Integer testTime = 0;
 
     @Override
     public String toString() {
-        return code.toUpperCase() + ":" + word + "---" + (remembered ? "以记住" : "未记住");
+        return "Code{" +
+                "编码:'" + code + '\'' +
+                ", 联想词:'" + word + '\'' +
+                ", 是否记住:" + (remembered ? "Y" : "N") +
+                ", 通过测试次数:" + passTime +
+                ", 总测试测试:" + testTime +
+                '}';
     }
 }

@@ -34,7 +34,7 @@ public class DataListener extends AnalysisEventListener {
             if (word == null || word.equals("\\")) {
                 continue;
             }
-            result.add(new Code(code, first, second, word, false));
+            result.add(new Code(code, first, second, word, false, 0, 0));
         }
     }
 

@@ -36,7 +36,7 @@ public class ManagementCommandImpl implements ManagementCommand {
             for (int j = 0; j < letters.size(); j++) {
                 String c = letters.get(j).toUpperCase();
                 if (i != j) {
-                    codeManager.save(new Code(l + c, l, c, "", false));
+                    codeManager.save(new Code(l + c, l, c, "", false, 0, 0));
                 }
             }
         }
@@ -142,26 +142,37 @@ public class ManagementCommandImpl implements ManagementCommand {
         query.setHasWord(true);
         query.setCode(row.toUpperCase());
         List<Code> codes = codeManager.queryByCondition(query);
-        System.out.println("简单测试模式,输入正确的单词下次不会出现");
+        System.out.println("简单测试模式");
         for (Code code : codes) {
-            System.out.println(String.format("当前编码:%s,请输入联想词.(退出请输入:q,跳过请输入:n)", code.getCode()));
+            System.out.println(String.format("当前编码:%s,请输入联想词.(退出:q,跳过:n,标记为记住:r)", code.getCode()));
             Scanner scan = new Scanner(System.in);
             String input = scan.next();
             switch (input) {
                 case "n":
+                    System.out.println(code.toString());
+                    continue;
+                case "r":
+                    System.out.println(code.toString());
+                    code.setPassTime(code.getPassTime() + 1);
+                    code.setTestTime(code.getTestTime() + 1);
+                    code.setRemembered(true);
+                    codeManager.save(code);
                     continue;
                 case "q":
-                    System.out.println("退出记忆模式。");
+                    System.out.println("退出测试模式。");
                     return;
                 default:
+                    code.setTestTime(code.getTestTime() + 1);
                     String source = code.getWord().toUpperCase();
                     String target = input.toUpperCase();
                     if (source.equals(target)) {
-                        System.out.println("答对了，恭喜!");
-                        code.setRemembered(true);
+                        code.setPassTime(code.getPassTime() + 1);
+                        System.out.println("答对了!");
+                        System.out.println(code.toString());
                         codeManager.save(code);
                     } else {
-                        System.out.println("不好意思答错了!");
+                        System.out.println("答错了!");
+                        System.out.println(code.toString());
                     }
             }
         }
