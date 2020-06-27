@@ -31,7 +31,8 @@ public class DataListener extends AnalysisEventListener {
             String first = letterIndex.get(i).toUpperCase();
             String code = first + second;
             String word = values.get(i + 1);
-            if (word == null || word.equals("\\")) {
+
+            if (word != null && word.equals("\\")) {
                 continue;
             }
             result.add(new Code(code, first, second, word, false, 0, 0));
@@ -41,10 +42,6 @@ public class DataListener extends AnalysisEventListener {
     @Override
     public void doAfterAllAnalysed(AnalysisContext analysisContext) {
         for (Code code : result) {
-            Code old = codeManager.queryByCode(code.getCode());
-            if (old != null) {
-                code.setRemembered(old.isRemembered());
-            }
             codeManager.save(code);
         }
         System.out.println("导入成功");

@@ -10,6 +10,7 @@ import org.springframework.util.StringUtils;
 import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * 联想词管理器
@@ -63,6 +64,11 @@ public class CodeManager {
      * @return
      */
     public List<Code> queryByCondition(Query query) {
+        return query(query)
+                .collect(Collectors.toList());
+    }
+
+    private Stream<Code> query(Query query) {
         return posMap.values().stream()
                 .flatMap(m -> m.values().stream())
                 //记住条件
@@ -88,8 +94,7 @@ public class CodeManager {
                     } else {
                         return target.startsWith(source);
                     }
-                })
-                .collect(Collectors.toList());
+                });
     }
 
     /**
@@ -128,5 +133,9 @@ public class CodeManager {
             return null;
         }
         return columnMap.get(key[1] + "");
+    }
+
+    public long count(Query query) {
+        return query(query).count();
     }
 }

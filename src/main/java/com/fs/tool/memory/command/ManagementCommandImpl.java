@@ -43,6 +43,16 @@ public class ManagementCommandImpl implements ManagementCommand {
         System.out.println("init data");
     }
 
+    @ShellMethod(value = "显示统计信息", key = {"info", "statistic"})
+    public String statistic() {
+        long total = codeManager.count(Query.builder().build());
+        double hasWords = codeManager.count(Query.builder().hasWord(true).build());
+        double rememebered = codeManager.count(Query.builder().isRemembered(true).build());
+        String info = "联想编码总数:%d\n" +
+                "已录入联想词:%.0f,占比%.1f%%\n" +
+                "已记住联想词数:%.0f,占比%.1f%%\n";
+        return String.format(info, total, hasWords, hasWords / total * 100, rememebered, rememebered / total * 100);
+    }
 
     @Override
     @ShellMethod(value = "查询编码,默认不显示空码。", key = {"query", "q"})
@@ -143,19 +153,24 @@ public class ManagementCommandImpl implements ManagementCommand {
         query.setCode(row.toUpperCase());
         List<Code> codes = codeManager.queryByCondition(query);
         System.out.println("简单测试模式");
-        for (Code code : codes) {
-            System.out.println(String.format("当前编码:%s,请输入联想词.(退出:q,跳过:n,标记为记住:r)", code.getCode()));
+        for (int i = 0; i < codes.size(); i++) {
+            Code code = codes.get(i);
+            System.out.println("=========================================================================");
+            System.out.println(String.format("当前编码:%s,请输入联想词.(退出:q,跳过:n,返回上一个:p,标记为记住:r)", code.getCode()));
             Scanner scan = new Scanner(System.in);
             String input = scan.next();
             switch (input) {
+                case "p":
+                    i = i < 1 ? -1 : i - 2;
+                    break;
                 case "n":
                     System.out.println(code.toString());
                     continue;
                 case "r":
-                    System.out.println(code.toString());
                     code.setPassTime(code.getPassTime() + 1);
                     code.setTestTime(code.getTestTime() + 1);
                     code.setRemembered(true);
+                    System.out.println(code.toString());
                     codeManager.save(code);
                     continue;
                 case "q":

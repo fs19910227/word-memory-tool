@@ -47,12 +47,12 @@ public class Code {
 
     @Override
     public String toString() {
-        return "Code{" +
+        return "[" +
                 "编码:'" + code + '\'' +
                 ", 联想词:'" + word + '\'' +
                 ", 是否记住:" + (remembered ? "Y" : "N") +
                 ", 通过测试次数:" + passTime +
                 ", 总测试测试:" + testTime +
-                '}';
+                ']';
     }
 }

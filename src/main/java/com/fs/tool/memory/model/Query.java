@@ -1,11 +1,17 @@
 package com.fs.tool.memory.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * 查询条件
  */
 @Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class Query {
     /**
      * 是否记住
