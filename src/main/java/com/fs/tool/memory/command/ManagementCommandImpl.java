@@ -2,6 +2,7 @@ package com.fs.tool.memory.command;
 
 import com.alibaba.excel.EasyExcel;
 import com.fs.tool.memory.dao.model.Code;
+import com.fs.tool.memory.imports.DataImportListener;
 import com.fs.tool.memory.model.Query;
 import com.fs.tool.memory.service.CodeManager;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +25,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * @author zhaofushan
+ * @date 2020/6/30
+ */
 @ShellComponent
 @Slf4j
 public class ManagementCommandImpl implements ManagementCommand {
@@ -103,7 +108,7 @@ public class ManagementCommandImpl implements ManagementCommand {
     @Override
     @ShellMethod(value = "同步数据到数据库", key = "sync")
     public String sync() {
-        codeManager.saveAll();
+        codeManager.sync();
         return "同步成功！";
     }
 
@@ -227,7 +232,7 @@ public class ManagementCommandImpl implements ManagementCommand {
     public void importData(@ShellOption(value = "-f", defaultValue = "") String file) {
         String fileName = file.equals("") ? "字母联想表.xlsx" : file;
         InputStream resourceAsStream = ManagementCommandImpl.class.getClassLoader().getResourceAsStream(fileName);
-        EasyExcel.read(resourceAsStream, null, new DataListener(letters, codeManager)).sheet().doRead();
+        EasyExcel.read(resourceAsStream, null, new DataImportListener(letters, codeManager)).sheet().doRead();
     }
 
     @ShellMethod(value = "do nothing,only for test", key = "nothing")

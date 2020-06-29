@@ -14,6 +14,9 @@ import java.util.stream.Stream;
 
 /**
  * 联想词管理器
+ * @author zhaofushan
+ * @date 2020/6/30
+ *
  */
 @Service
 public class CodeManager {
@@ -41,17 +44,28 @@ public class CodeManager {
         return !posMap.isEmpty();
     }
 
+    /**
+     * 清除所有联想词
+     */
     public void clearAll() {
         posMap.clear();
         codeRepository.deleteAll();
     }
 
-    public void saveAll() {
+    /**
+     * 同步数据到数据库
+     */
+    public void sync() {
         List<Code> collect = posMap.values().stream()
                 .flatMap(map -> map.values().stream()).collect(Collectors.toList());
         codeRepository.saveAll(collect);
     }
 
+    /**
+     * 保存联想词
+     *
+     * @param code
+     */
     public void save(Code code) {
         posMap.putIfAbsent(code.getFirst(), new HashMap<>());
         posMap.get(code.getFirst()).put(code.getSecond(), code);

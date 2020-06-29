@@ -7,6 +7,9 @@ import lombok.NoArgsConstructor;
 
 /**
  * 查询条件
+ *
+ * @author zhaofushan
+ * @date 2020/6/30
  */
 @Data
 @Builder

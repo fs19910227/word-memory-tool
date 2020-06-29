@@ -8,6 +8,10 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 
+/**
+ * @author zhaofushan
+ * @date 2020/6/30
+ */
 @Entity
 @Data
 @NoArgsConstructor

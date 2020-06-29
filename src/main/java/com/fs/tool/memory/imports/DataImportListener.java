@@ -1,4 +1,4 @@
-package com.fs.tool.memory.command;
+package com.fs.tool.memory.imports;
 
 import com.alibaba.excel.context.AnalysisContext;
 import com.alibaba.excel.event.AnalysisEventListener;
@@ -11,13 +11,16 @@ import java.util.Map;
 
 /**
  * excel导入监听
+ *
+ * @author zhaofushan
+ * @date 2020/6/30
  */
-public class DataListener extends AnalysisEventListener {
+public class DataImportListener extends AnalysisEventListener {
     private final CodeManager codeManager;
     private final List<String> letterIndex;
     private List<Code> result = new ArrayList<>();
 
-    public DataListener(List<String> letters, CodeManager codeManager) {
+    public DataImportListener(List<String> letters, CodeManager codeManager) {
         this.letterIndex = letters;
         this.codeManager = codeManager;
     }

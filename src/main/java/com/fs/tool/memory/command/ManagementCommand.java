@@ -7,6 +7,10 @@ import javax.validation.constraints.Size;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * @author zhaofushan
+ * @date 2020/6/30
+ */
 public interface ManagementCommand {
     @ShellMethod(value = "初始化数据", key = "init")
     void initData();
