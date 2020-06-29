@@ -4,6 +4,7 @@ import org.springframework.shell.standard.ShellMethod;
 import org.springframework.shell.standard.ShellOption;
 
 import javax.validation.constraints.Size;
+import java.io.IOException;
 import java.util.List;
 
 public interface ManagementCommand {
@@ -17,7 +18,7 @@ public interface ManagementCommand {
                        @ShellOption(value = "-r") Boolean remembered);
 
     @ShellMethod(value = "同步数据到数据库", key = "sync")
-    void sync();
+    String sync();
 
     @ShellMethod(value = "编辑联想词", key = {"edit", "e"})
     String edit(@Size(min = 2, max = 2) String code);
@@ -27,7 +28,7 @@ public interface ManagementCommand {
                 @ShellOption(defaultValue = "true", value = {"-sync", "-s"}, help = "每次录入自动同步到数据库，默认为true") boolean autoSync);
 
     @ShellMethod(value = "记忆测试,记忆所有没有记住的编码", key = {"t", "test"})
-    void test(@ShellOption(defaultValue = "", value = {"-r", "-row"}, help = "指定行进行测试") @Size(min = 0, max = 1) String row);
+    void test(@ShellOption(defaultValue = "", value = {"-r", "-row"}, help = "指定行进行测试") @Size(min = 0, max = 1) String row) throws IOException;
 
     @ShellMethod(value = "Delete all", key = "drop")
     void deleteAll();

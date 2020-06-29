@@ -5,6 +5,8 @@ import com.fs.tool.memory.dao.model.Code;
 import com.fs.tool.memory.model.Query;
 import com.fs.tool.memory.service.CodeManager;
 import lombok.extern.slf4j.Slf4j;
+import org.jline.reader.LineReader;
+import org.jline.terminal.Terminal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.shell.standard.ShellComponent;
@@ -12,12 +14,14 @@ import org.springframework.shell.standard.ShellMethod;
 import org.springframework.shell.standard.ShellOption;
 import org.springframework.util.StringUtils;
 
+import javax.annotation.PostConstruct;
 import javax.validation.constraints.Size;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Scanner;
 import java.util.stream.Collectors;
 
 @ShellComponent
@@ -27,6 +31,28 @@ public class ManagementCommandImpl implements ManagementCommand {
     private CodeManager codeManager;
     @Value("${tools.letters}")
     private List<String> letters;
+    @Autowired
+    private Terminal terminal;
+
+    private PrintWriter writer;
+
+    @Autowired
+    private LineReader reader;
+
+    @PostConstruct
+    public void init() {
+        writer = terminal.writer();
+    }
+
+    private void outputln(String out) {
+        writer.println(out);
+        writer.flush();
+    }
+
+    private void output(String out) {
+        writer.print(out);
+        writer.flush();
+    }
 
     @Override
     @ShellMethod(value = "初始化数据", key = "init")
@@ -40,7 +66,7 @@ public class ManagementCommandImpl implements ManagementCommand {
                 }
             }
         }
-        System.out.println("init data");
+        outputln("init data");
     }
 
     @ShellMethod(value = "显示统计信息", key = {"info", "statistic"})
@@ -76,9 +102,9 @@ public class ManagementCommandImpl implements ManagementCommand {
 
     @Override
     @ShellMethod(value = "同步数据到数据库", key = "sync")
-    public void sync() {
+    public String sync() {
         codeManager.saveAll();
-        System.out.println("同步成功！");
+        return "同步成功！";
     }
 
     @Override
@@ -90,10 +116,8 @@ public class ManagementCommandImpl implements ManagementCommand {
             result = "未能查询到联想词";
             return result;
         }
-        System.out.println(String.format("编辑词组code:%s,当前联想词:%s。(输入q退出编辑)", query.getCode(), query.getWord()));
-        System.out.print("请输入新的联想词（输入q退出编辑）:");
-        Scanner scan = new Scanner(System.in);
-        String input = scan.next();
+        outputln(String.format("编辑词组code:%s,当前联想词:%s。(输入q退出编辑)", query.getCode(), query.getWord()));
+        String input = reader.readLine("请输入新的联想词（输入q退出编辑）:");
         switch (input) {
             case "q":
                 result = "退出编辑模式";
@@ -110,7 +134,7 @@ public class ManagementCommandImpl implements ManagementCommand {
     @ShellMethod(value = "联想词录入模式", key = {"i", "input"})
     public void typeIn(@ShellOption(defaultValue = "", value = {"-r", "-row"}, help = "指定行录入数据") @Size(min = 0, max = 1) String row,
                        @ShellOption(defaultValue = "true", value = {"-sync", "-s"}, help = "每次录入自动同步到数据库，默认为true") boolean autoSync) {
-        System.out.println("进入词组输入模式");
+        outputln("进入词组输入模式");
         if (!codeManager.hasCodes()) {
             initData();
         }
@@ -124,18 +148,17 @@ public class ManagementCommandImpl implements ManagementCommand {
         while (iterator.hasNext()) {
             Code code = iterator.next();
             if (StringUtils.isEmpty(code.getWord())) {
-                System.out.println(String.format("当前编码:%s,请输入联想词.(退出请输入:q,跳过请输入:n)", code.getCode()));
-                Scanner scan = new Scanner(System.in);
-                String input = scan.next();
+                outputln(String.format("当前编码:%s,请输入联想词.(退出请输入:q,跳过请输入:n)", code.getCode()));
+                String input = reader.readLine();
                 switch (input) {
                     case "n":
                         continue;
                     case "q":
-                        System.out.println("退出录入模式。");
+                        outputln("退出录入模式。");
                         return;
                     default:
                         code.setWord(input.trim());
-                        System.out.println("联想词：" + code.getWord() + " 已保存");
+                        outputln("联想词：" + code.getWord() + " 已保存");
                         if (autoSync) {
                             codeManager.save(code);
                         }
@@ -146,35 +169,34 @@ public class ManagementCommandImpl implements ManagementCommand {
 
     @Override
     @ShellMethod(value = "记忆测试,记忆所有没有记住的编码", key = {"t", "test"})
-    public void test(@ShellOption(defaultValue = "", value = {"-r", "-row"}, help = "指定行进行测试") @Size(min = 0, max = 1) String row) {
+    public void test(@ShellOption(defaultValue = "", value = {"-r", "-row"}, help = "指定行进行测试") @Size(min = 0, max = 1) String row) throws IOException {
         Query query = new Query();
         query.setIsRemembered(false);
         query.setHasWord(true);
         query.setCode(row.toUpperCase());
         List<Code> codes = codeManager.queryByCondition(query);
-        System.out.println("简单测试模式");
+        outputln("简单测试模式");
         for (int i = 0; i < codes.size(); i++) {
             Code code = codes.get(i);
-            System.out.println("=========================================================================");
-            System.out.println(String.format("当前编码:%s,请输入联想词.(退出:q,跳过:n,返回上一个:p,标记为记住:r)", code.getCode()));
-            Scanner scan = new Scanner(System.in);
-            String input = scan.next();
+            outputln("=========================================================================");
+            outputln(String.format("当前编码:%s,请输入联想词.(退出:q,跳过:Enter,返回上一个:p,标记为记住:r)", code.getCode()));
+            String input = reader.readLine();
             switch (input) {
                 case "p":
                     i = i < 1 ? -1 : i - 2;
                     break;
-                case "n":
-                    System.out.println(code.toString());
+                case "":
+                    outputln(code.toString());
                     continue;
                 case "r":
                     code.setPassTime(code.getPassTime() + 1);
                     code.setTestTime(code.getTestTime() + 1);
                     code.setRemembered(true);
-                    System.out.println(code.toString());
+                    outputln(code.toString());
                     codeManager.save(code);
                     continue;
                 case "q":
-                    System.out.println("退出测试模式。");
+                    outputln("退出测试模式。");
                     return;
                 default:
                     code.setTestTime(code.getTestTime() + 1);
@@ -182,12 +204,12 @@ public class ManagementCommandImpl implements ManagementCommand {
                     String target = input.toUpperCase();
                     if (source.equals(target)) {
                         code.setPassTime(code.getPassTime() + 1);
-                        System.out.println("答对了!");
-                        System.out.println(code.toString());
+                        outputln("答对了!");
+                        outputln(code.toString());
                         codeManager.save(code);
                     } else {
-                        System.out.println("答错了!");
-                        System.out.println(code.toString());
+                        outputln("答错了!");
+                        outputln(code.toString());
                     }
             }
         }
@@ -197,7 +219,7 @@ public class ManagementCommandImpl implements ManagementCommand {
     @ShellMethod(value = "Delete all", key = "drop")
     public void deleteAll() {
         codeManager.clearAll();
-        System.out.println("清除所有数据");
+        outputln("清除所有数据");
     }
 
     @Override
@@ -206,5 +228,13 @@ public class ManagementCommandImpl implements ManagementCommand {
         String fileName = file.equals("") ? "字母联想表.xlsx" : file;
         InputStream resourceAsStream = ManagementCommandImpl.class.getClassLoader().getResourceAsStream(fileName);
         EasyExcel.read(resourceAsStream, null, new DataListener(letters, codeManager)).sheet().doRead();
+    }
+
+    @ShellMethod(value = "do nothing,only for test", key = "nothing")
+    public void doNothing() {
+        PrintWriter writer = terminal.writer();
+        outputln("测试");
+        String s = reader.readLine("提示");
+        System.out.println(s);
     }
 }
