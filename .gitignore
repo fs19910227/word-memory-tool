@@ -32,8 +32,6 @@ build/
 /.mvn/wrapper/maven-wrapper.jar
 /.mvn/wrapper/maven-wrapper.properties
 /.mvn/wrapper/MavenWrapperDownloader.java
-/db/.h2/dbc2m.lock.db
-/db/.h2/dbc2m.mv.db
 /spring-shell.log
 /mvnw
 /mvnw.cmd
