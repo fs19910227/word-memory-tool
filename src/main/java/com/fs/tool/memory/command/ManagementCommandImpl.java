@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -174,13 +175,21 @@ public class ManagementCommandImpl implements ManagementCommand {
 
     @Override
     @ShellMethod(value = "记忆测试,记忆所有没有记住的编码", key = {"t", "test"})
-    public void test(@ShellOption(defaultValue = "", value = {"-r", "-row"}, help = "指定行进行测试") @Size(min = 0, max = 1) String row) throws IOException {
+    public void test(@ShellOption(defaultValue = "", value = {"-r", "-row"}, help = "指定行进行测试") @Size(min = 0, max = 1) String row,
+                     @ShellOption(defaultValue = "false", value = "--review", help = "是否是复习模式，默认false") Boolean isReview,
+                     @ShellOption(defaultValue = "false", value = "--random", help = "是否随机，默认false") Boolean isRandom) throws IOException {
         Query query = new Query();
-        query.setIsRemembered(false);
+        query.setIsRemembered(isReview);
         query.setHasWord(true);
         query.setCode(row.toUpperCase());
         List<Code> codes = codeManager.queryByCondition(query);
-        outputln("简单测试模式");
+        if (isRandom) {
+            Collections.shuffle(codes);
+        }
+        outputln("进入测试模式\n" +
+                "是否测试已记住code：" + isReview + "\n" +
+                "随机code：" + isRandom + "\n" +
+                "测试code总数：" + codes.size());
         for (int i = 0; i < codes.size(); i++) {
             Code code = codes.get(i);
             outputln("=========================================================================");
@@ -229,10 +238,11 @@ public class ManagementCommandImpl implements ManagementCommand {
 
     @Override
     @ShellMethod(value = "Excel import,需遵循导入模板", key = "import")
-    public void importData(@ShellOption(value = "-f", defaultValue = "") String file) {
+    public void importData(@ShellOption(value = "-f", defaultValue = "") String file,
+                           @ShellOption(value = "-o", defaultValue = "false") Boolean overwrite) {
         String fileName = file.equals("") ? "字母联想表.xlsx" : file;
         InputStream resourceAsStream = ManagementCommandImpl.class.getClassLoader().getResourceAsStream(fileName);
-        EasyExcel.read(resourceAsStream, null, new DataImportListener(letters, codeManager)).sheet().doRead();
+        EasyExcel.read(resourceAsStream, null, new DataImportListener(letters, codeManager, overwrite)).sheet().doRead();
     }
 
     @ShellMethod(value = "do nothing,only for test", key = "nothing")

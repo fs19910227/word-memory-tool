@@ -18,11 +18,20 @@ import java.util.Map;
 public class DataImportListener extends AnalysisEventListener {
     private final CodeManager codeManager;
     private final List<String> letterIndex;
+    private final boolean overwrite;
     private List<Code> result = new ArrayList<>();
 
-    public DataImportListener(List<String> letters, CodeManager codeManager) {
+    /**
+     * @param letters     字母列表
+     * @param codeManager manager
+     * @param overwrite   是否覆盖
+     */
+    public DataImportListener(List<String> letters,
+                              CodeManager codeManager,
+                              boolean overwrite) {
         this.letterIndex = letters;
         this.codeManager = codeManager;
+        this.overwrite = overwrite;
     }
 
     @Override
@@ -35,7 +44,7 @@ public class DataImportListener extends AnalysisEventListener {
             String code = first + second;
             String word = values.get(i + 1);
 
-            if (word != null && word.equals("\\")) {
+            if (word == null || word.equals("\\")) {
                 continue;
             }
             result.add(new Code(code, first, second, word, false, 0, 0));
@@ -45,8 +54,7 @@ public class DataImportListener extends AnalysisEventListener {
     @Override
     public void doAfterAllAnalysed(AnalysisContext analysisContext) {
         for (Code code : result) {
-            codeManager.save(code);
+            codeManager.save(code, overwrite);
         }
-        System.out.println("导入成功");
     }
 }

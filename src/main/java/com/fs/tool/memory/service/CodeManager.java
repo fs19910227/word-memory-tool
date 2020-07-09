@@ -14,9 +14,9 @@ import java.util.stream.Stream;
 
 /**
  * 联想词管理器
+ *
  * @author zhaofushan
  * @date 2020/6/30
- *
  */
 @Service
 public class CodeManager {
@@ -67,9 +67,31 @@ public class CodeManager {
      * @param code
      */
     public void save(Code code) {
+        save(code, true);
+    }
+
+    /**
+     * 保存联想词
+     *
+     * @param code
+     * @param overwrite 是否覆盖
+     */
+    public void save(Code code, boolean overwrite) {
         posMap.putIfAbsent(code.getFirst(), new HashMap<>());
-        posMap.get(code.getFirst()).put(code.getSecond(), code);
-        codeRepository.save(code);
+        Map<String, Code> rows = posMap.get(code.getFirst());
+        if (overwrite) {
+            rows.put(code.getSecond(), code);
+            codeRepository.save(code);
+        } else {
+            rows.compute(code.getSecond(), (key, old) -> {
+                if (old == null || StringUtils.isEmpty(old.getWord())) {
+                    codeRepository.save(code);
+                    return code;
+                } else {
+                    return old;
+                }
+            });
+        }
     }
 
     /**
