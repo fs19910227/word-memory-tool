@@ -1,16 +1,22 @@
 package com.fs.tool.memory.service;
 
-import com.fs.tool.memory.dao.model.Code;
+import com.fs.tool.memory.command.Context;
+import com.fs.tool.memory.dao.model.CommonWord;
 import com.fs.tool.memory.dao.repository.CodeRepository;
 import com.fs.tool.memory.model.Query;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import javax.annotation.PostConstruct;
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
+import javax.transaction.Transactional;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * 联想词管理器
@@ -21,19 +27,9 @@ import java.util.stream.Stream;
 @Service
 public class CodeManager {
     @Autowired
-    CodeRepository codeRepository;
-
-    private Map<String, Map<String, Code>> posMap = new LinkedHashMap<>();
-
-
-    @PostConstruct
-    public void init() {
-        Iterable<Code> all = codeRepository.findAll();
-        for (Code code : all) {
-            posMap.putIfAbsent(code.getFirst(), new HashMap<>());
-            posMap.get(code.getFirst()).put(code.getSecond(), code);
-        }
-    }
+    private CodeRepository codeRepository;
+    @Autowired
+    private Context context;
 
     /**
      * 是否有联想词数据
@@ -41,34 +37,17 @@ public class CodeManager {
      * @return
      */
     public boolean hasCodes() {
-        return !posMap.isEmpty();
+        return count(Query.builder().build()) > 0;
     }
 
     /**
-     * 清除所有联想词
+     * 清除group 下所有联想词
      */
+    @Transactional
     public void clearAll() {
-        posMap.clear();
-        codeRepository.deleteAll();
+        codeRepository.deleteAllByWordGroup(context.currentGroup);
     }
 
-    /**
-     * 同步数据到数据库
-     */
-    public void sync() {
-        List<Code> collect = posMap.values().stream()
-                .flatMap(map -> map.values().stream()).collect(Collectors.toList());
-        codeRepository.saveAll(collect);
-    }
-
-    /**
-     * 保存联想词
-     *
-     * @param code
-     */
-    public void save(Code code) {
-        save(code, true);
-    }
 
     /**
      * 保存联想词
@@ -76,22 +55,36 @@ public class CodeManager {
      * @param code
      * @param overwrite 是否覆盖
      */
-    public void save(Code code, boolean overwrite) {
-        posMap.putIfAbsent(code.getFirst(), new HashMap<>());
-        Map<String, Code> rows = posMap.get(code.getFirst());
-        if (overwrite) {
-            rows.put(code.getSecond(), code);
-            codeRepository.save(code);
+    public void save(CommonWord code, boolean overwrite) {
+        Optional<CommonWord> commonWord = codeRepository.findByKeyAndWordGroup(code.getKey(), code.getWordGroup());
+        if (commonWord.isPresent()) {
+            CommonWord word = commonWord.get();
+            if (overwrite) {
+                code.setId(word.getId());
+                codeRepository.save(code);
+            }
         } else {
-            rows.compute(code.getSecond(), (key, old) -> {
-                if (old == null || StringUtils.isEmpty(old.getWord())) {
-                    codeRepository.save(code);
-                    return code;
-                } else {
-                    return old;
-                }
-            });
+            codeRepository.save(code);
         }
+    }
+
+    /**
+     * 保存所有
+     *
+     * @param commonWords
+     */
+    public void saveAll(List<CommonWord> commonWords) {
+        codeRepository.saveAll(commonWords);
+    }
+
+
+    /**
+     * 保存联想词
+     *
+     * @param word
+     */
+    public void save(CommonWord word) {
+        save(word, true);
     }
 
     /**
@@ -99,50 +92,34 @@ public class CodeManager {
      *
      * @return
      */
-    public List<Code> queryByCondition(Query query) {
-        return query(query)
-                .collect(Collectors.toList());
-    }
 
-    private Stream<Code> query(Query query) {
-        return posMap.values().stream()
-                .flatMap(m -> m.values().stream())
-                //记住条件
-                .filter(info -> {
-                    Boolean isRemembered = query.getIsRemembered();
-                    return isRemembered == null || info.isRemembered() == isRemembered;
-                })
-                //联想词条件
-                .filter(info -> {
-                    Boolean hasWord = query.getHasWord();
-                    if (hasWord == null) {
-                        return true;
-                    } else {
-                        return hasWord == !StringUtils.isEmpty(info.getWord());
-                    }
-                })
-                //word
-                .filter(info -> {
-                    String source = query.getCode();
-                    String target = info.getCode();
-                    if (source == null) {
-                        return true;
-                    } else {
-                        return target.startsWith(source);
-                    }
-                });
+    public List<CommonWord> queryByCondition(Query condition) {
+        condition.setGroup(context.currentGroup);
+        CodeSpecification codeSpecification = new CodeSpecification(condition);
+        return codeRepository.findAll(codeSpecification);
     }
 
     /**
-     * 查询所有
+     * 查询单条
      *
+     * @param query
      * @return
      */
-    public List<Code> queryAll() {
-        return posMap.values().stream()
-                .flatMap(m -> m.values().stream())
-                .collect(Collectors.toList());
+    public Optional<CommonWord> queryOne(Query query) {
+        query.setGroup(context.currentGroup);
+        CodeSpecification codeSpecification = new CodeSpecification(query);
+        return codeRepository.findOne(codeSpecification);
     }
+
+    /**
+     * 统计count
+     */
+    public long count(Query query) {
+        query.setGroup(context.currentGroup);
+        CodeSpecification codeSpecification = new CodeSpecification(query);
+        return codeRepository.count(codeSpecification);
+    }
+
 
     /**
      * 通过row查询codes
@@ -150,9 +127,10 @@ public class CodeManager {
      * @param row row index
      * @return
      */
-    public Collection<Code> queryByRowIndex(String row) {
-        Map<String, Code> stringCodeMap = posMap.getOrDefault(row, new HashMap<>());
-        return stringCodeMap.values();
+    public List<CommonWord> queryByRowIndex(String row) {
+        Query query = new Query();
+        query.setCode(row);
+        return queryByCondition(query);
     }
 
     /**
@@ -161,17 +139,48 @@ public class CodeManager {
      * @param code
      * @return
      */
-    public Code queryByCode(String code) {
-        assert code.length() == 2;
-        char[] key = code.toCharArray();
-        Map<String, Code> columnMap = posMap.get(key[0] + "");
-        if (columnMap == null) {
-            return null;
-        }
-        return columnMap.get(key[1] + "");
+    public Optional<CommonWord> queryByCode(String code) {
+        Query query = new Query();
+        query.setCode(code);
+        return queryOne(query);
     }
 
-    public long count(Query query) {
-        return query(query).count();
+    /**
+     * 通用条件查询
+     */
+    private static class CodeSpecification implements Specification<CommonWord> {
+        private Query condition;
+
+        public CodeSpecification(Query condition) {
+            this.condition = condition;
+        }
+
+        @Override
+        public Predicate toPredicate(Root<CommonWord> root, CriteriaQuery<?> query, CriteriaBuilder criteriaBuilder) {
+            List<Predicate> predicates = new ArrayList<>();
+            String group = condition.getGroup();
+            if (group != null) {
+                predicates.add(criteriaBuilder.equal(root.get("wordGroup"), group));
+            }
+            String code = condition.getCode();
+            if (!StringUtils.isEmpty(code)) {
+                predicates.add(criteriaBuilder.like(root.get("key"), code + "%"));
+            }
+            Boolean isRemembered = condition.getIsRemembered();
+            if (isRemembered != null) {
+                predicates.add(criteriaBuilder.equal(root.get("remembered"), isRemembered));
+            }
+            Boolean hasWord = condition.getHasWord();
+            if (hasWord != null) {
+                if (hasWord) {
+                    predicates.add(criteriaBuilder.isNotNull(root.get("definition")));
+                } else {
+                    predicates.add(criteriaBuilder.isNull(root.get("definition")));
+                }
+            }
+            Predicate[] predicateArray = predicates.toArray(new Predicate[0]);
+            query.where(predicateArray);
+            return null;
+        }
     }
 }

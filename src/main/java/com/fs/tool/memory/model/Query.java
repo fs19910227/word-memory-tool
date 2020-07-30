@@ -28,4 +28,8 @@ public class Query {
      * 编码搜索 前缀模糊
      */
     private String code;
+    /**
+     * 分组信息
+     */
+    private String group;
 }
