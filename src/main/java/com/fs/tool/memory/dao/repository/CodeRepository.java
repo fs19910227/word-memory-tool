@@ -22,5 +22,4 @@ public interface CodeRepository extends JpaRepository<CommonWord, String>, JpaSp
 
     Optional<CommonWord> findByKeyAndWordGroup(String key, String group);
 
-
 }

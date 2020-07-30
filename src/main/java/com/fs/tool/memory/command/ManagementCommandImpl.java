@@ -1,9 +1,8 @@
 package com.fs.tool.memory.command;
 
-import com.alibaba.excel.EasyExcel;
+import com.fs.tool.memory.command.imports.DataImportService;
 import com.fs.tool.memory.command.init.DataInitService;
 import com.fs.tool.memory.dao.model.CommonWord;
-import com.fs.tool.memory.imports.DataImportListener;
 import com.fs.tool.memory.model.Query;
 import com.fs.tool.memory.service.CodeManager;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +16,6 @@ import org.springframework.shell.standard.ShellOption;
 import javax.annotation.PostConstruct;
 import javax.validation.constraints.Size;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -39,6 +37,8 @@ public class ManagementCommandImpl implements ManagementCommand {
     private LineReader reader;
     @Autowired
     private DataInitService dataInitService;
+    @Autowired
+    private DataImportService dataImportService;
     @Autowired
     private Context context;
 
@@ -116,7 +116,7 @@ public class ManagementCommandImpl implements ManagementCommand {
     @Override
     @ShellMethod(value = "编辑联想词", key = {"edit", "e"})
     public String edit(@Size(min = 2, max = 2) String code) {
-        CommonWord query = codeManager.queryByCode(code.toUpperCase()).orElseGet(null);
+        CommonWord query = codeManager.queryOne(Query.builder().code(code.toUpperCase()).build()).orElseGet(null);
         String result;
         if (query == null) {
             result = "未能查询到联想词";
@@ -204,15 +204,11 @@ public class ManagementCommandImpl implements ManagementCommand {
     public void importData(@ShellOption(value = "-f", defaultValue = "") String file,
                            @ShellOption(value = "-o", defaultValue = "false") Boolean overwrite) {
         String fileName = file.equals("") ? "default.xlsx" : file;
-        InputStream resourceAsStream = ManagementCommandImpl.class.getClassLoader().getResourceAsStream(fileName);
-        EasyExcel.read(resourceAsStream, null, new DataImportListener(codeManager, context, overwrite)).sheet().doRead();
+        dataImportService.importData(fileName, overwrite);
     }
 
     @ShellMethod(value = "do nothing,only for test", key = "nothing")
     public void doNothing() {
-        PrintWriter writer = terminal.writer();
-        outputln("测试");
-        String s = reader.readLine("提示");
-        System.out.println(s);
+
     }
 }

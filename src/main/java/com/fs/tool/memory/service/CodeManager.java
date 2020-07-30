@@ -40,6 +40,7 @@ public class CodeManager {
         return count(Query.builder().build()) > 0;
     }
 
+
     /**
      * 清除group 下所有联想词
      */
@@ -50,25 +51,6 @@ public class CodeManager {
 
 
     /**
-     * 保存联想词
-     *
-     * @param code
-     * @param overwrite 是否覆盖
-     */
-    public void save(CommonWord code, boolean overwrite) {
-        Optional<CommonWord> commonWord = codeRepository.findByKeyAndWordGroup(code.getKey(), code.getWordGroup());
-        if (commonWord.isPresent()) {
-            CommonWord word = commonWord.get();
-            if (overwrite) {
-                code.setId(word.getId());
-                codeRepository.save(code);
-            }
-        } else {
-            codeRepository.save(code);
-        }
-    }
-
-    /**
      * 保存所有
      *
      * @param commonWords
@@ -77,19 +59,19 @@ public class CodeManager {
         codeRepository.saveAll(commonWords);
     }
 
-
     /**
      * 保存联想词
      *
      * @param word
      */
     public void save(CommonWord word) {
-        save(word, true);
+        codeRepository.save(word);
     }
 
     /**
      * 条件查询
      *
+     * @param condition 查询多条
      * @return
      */
 
@@ -120,30 +102,6 @@ public class CodeManager {
         return codeRepository.count(codeSpecification);
     }
 
-
-    /**
-     * 通过row查询codes
-     *
-     * @param row row index
-     * @return
-     */
-    public List<CommonWord> queryByRowIndex(String row) {
-        Query query = new Query();
-        query.setCode(row);
-        return queryByCondition(query);
-    }
-
-    /**
-     * 通过编码查询
-     *
-     * @param code
-     * @return
-     */
-    public Optional<CommonWord> queryByCode(String code) {
-        Query query = new Query();
-        query.setCode(code);
-        return queryOne(query);
-    }
 
     /**
      * 通用条件查询

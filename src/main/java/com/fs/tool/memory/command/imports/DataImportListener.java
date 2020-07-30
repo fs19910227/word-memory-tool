@@ -1,15 +1,13 @@
-package com.fs.tool.memory.imports;
+package com.fs.tool.memory.command.imports;
 
 import com.alibaba.excel.context.AnalysisContext;
 import com.alibaba.excel.event.AnalysisEventListener;
 import com.fs.tool.memory.command.Context;
 import com.fs.tool.memory.dao.model.CommonWord;
-import com.fs.tool.memory.service.CodeManager;
+import com.fs.tool.memory.dao.repository.CodeRepository;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 二维 excel导入监听
@@ -18,21 +16,21 @@ import java.util.Map;
  * @date 2020/6/30
  */
 public class DataImportListener extends AnalysisEventListener {
-    private final CodeManager codeManager;
+    private final CodeRepository codeRepository;
     private final List<String> heads = new ArrayList<>();
     private final boolean overwrite;
     private final Context context;
     private List<CommonWord> result = new ArrayList<>();
 
     /**
-     * @param codeManager manager
+     * @param codeRepository manager
      * @param context
-     * @param overwrite   是否覆盖
+     * @param overwrite      是否覆盖
      */
     public DataImportListener(
-            CodeManager codeManager,
+            CodeRepository codeRepository,
             Context context, boolean overwrite) {
-        this.codeManager = codeManager;
+        this.codeRepository = codeRepository;
         this.overwrite = overwrite;
         this.context = context;
     }
@@ -67,8 +65,13 @@ public class DataImportListener extends AnalysisEventListener {
 
     @Override
     public void doAfterAllAnalysed(AnalysisContext analysisContext) {
-        for (CommonWord code : result) {
-            codeManager.save(code, overwrite);
-        }
+        List<CommonWord> collect = result.stream()
+                .filter(code -> {
+                    Optional<CommonWord> commonWord = codeRepository.findByKeyAndWordGroup(code.getKey(), code.getWordGroup());
+                    commonWord.ifPresent(word -> code.setId(word.getId()));
+                    return overwrite || !commonWord.isPresent();
+                })
+                .collect(Collectors.toList());
+        codeRepository.saveAll(collect);
     }
 }
