@@ -3,6 +3,7 @@ package com.fs.tool.memory.command;
 import com.fs.tool.memory.command.imports.DataImportService;
 import com.fs.tool.memory.command.init.DataInitService;
 import com.fs.tool.memory.dao.model.CommonWord;
+import com.fs.tool.memory.dao.model.WordGroup;
 import com.fs.tool.memory.model.Query;
 import com.fs.tool.memory.service.CodeManager;
 import lombok.extern.slf4j.Slf4j;
@@ -60,12 +61,24 @@ public class ManagementCommandImpl implements ManagementCommand {
     }
 
     @Override
-    @ShellMethod(value = "切换分组", key = {"use", "group"})
+    @ShellMethod(value = "切换分组", key = {"use"})
     public void chooseGroup(@ShellOption(value = {"-g", "-group"},
             defaultValue = DEFAULT_GROUP) String group) {
         context.currentGroup = group;
+        WordGroup wordGroup = new WordGroup();
+        wordGroup.setName(group);
+        wordGroup.setDescription(group);
+        if (!codeManager.existGroup(wordGroup)) {
+            codeManager.addGroup(wordGroup);
+        }
         outputln("change group to " + group);
         output(statistic());
+    }
+
+    @Override
+    @ShellMethod(value = "列出所有分组信息", key = {"groups"})
+    public List<String> groups() {
+        return codeManager.groups().stream().map(g -> g.toString()).collect(Collectors.toList());
     }
 
     @Override
@@ -83,30 +96,30 @@ public class ManagementCommandImpl implements ManagementCommand {
     @ShellMethod(value = "显示统计信息", key = {"info", "statistic"})
     public String statistic() {
         long total = codeManager.count(Query.builder().build());
-        double hasWords = codeManager.count(Query.builder().hasWord(true).build());
+        double hasWords = codeManager.count(Query.builder().existDefinition(true).build());
         double rememebered = codeManager.count(Query.builder().isRemembered(true).build());
         String info = "当前分组:%s\n" +
                 "联想编码总数:%d\n" +
-                "已录入联想词:%.0f,占比%.1f%%\n" +
-                "已记住联想词数:%.0f,占比%.1f%%\n";
+                "有定义的联想词:%.0f,占比%.2f%%\n" +
+                "已记住联想词数:%.0f,占比%.2f%%\n";
         return String.format(info, context.currentGroup, total, hasWords, hasWords / total * 100, rememebered, rememebered / total * 100);
     }
 
     @Override
-    @ShellMethod(value = "查询编码,默认不显示空码。", key = {"query", "q"})
-    public List<String> query(@ShellOption(defaultValue = "") @Size(max = 2) String code,
-                              @ShellOption(value = "-e", defaultValue = "true") boolean onlyExist,
-                              @ShellOption(value = "-r", defaultValue = "") Boolean remembered) {
+    @ShellMethod(value = "查询编码,默认显示空码。", key = {"query", "q"})
+    public List<String> query(@ShellOption(defaultValue = ShellOption.NULL) String code,
+                              @ShellOption(value = "-e", defaultValue = "", help = "是否存在定义") Boolean existDefinition,
+                              @ShellOption(value = "-r", defaultValue = "", help = "是否记住") Boolean remembered) {
         List<String> result = new ArrayList<>();
         if (!codeManager.hasCodes()) {
-            result.add("没有联想数据，请执行初始化init命令");
+            result.add("没有联想数据");
             return result;
         }
-        code = code.toUpperCase();
+        code = code == null ? null : code.toUpperCase();
         Query query = new Query();
-        query.setHasWord(onlyExist);
+        query.setExistDefinition(existDefinition);
         query.setIsRemembered(remembered);
-        query.setCode(code);
+        query.setPrefix(code);
         return codeManager.queryByCondition(query).stream()
                 .map(info -> info.toString())
                 .collect(Collectors.toList());
@@ -115,8 +128,8 @@ public class ManagementCommandImpl implements ManagementCommand {
 
     @Override
     @ShellMethod(value = "编辑联想词", key = {"edit", "e"})
-    public String edit(@Size(min = 2, max = 2) String code) {
-        CommonWord query = codeManager.queryOne(Query.builder().code(code.toUpperCase()).build()).orElseGet(null);
+    public String edit(@Size(min = 1) String code) {
+        CommonWord query = codeManager.queryOne(Query.builder().code(code.toUpperCase()).build()).orElse(null);
         String result;
         if (query == null) {
             result = "未能查询到联想词";
@@ -137,14 +150,45 @@ public class ManagementCommandImpl implements ManagementCommand {
     }
 
     @Override
+    @ShellMethod(value = "新增联想词", key = {"add", "a"})
+    public String add(@Size(min = 1) String code,
+                      @ShellOption(defaultValue = ShellOption.NULL) String definition,
+                      @ShellOption(defaultValue = ShellOption.NULL) String desctrption) {
+        String upperCode = code.toUpperCase();
+        CommonWord oldWord = codeManager.queryOne(Query.builder().code(upperCode).build()).orElse(null);
+        String result;
+        if (oldWord != null) {
+            result = "联想词已存在," + oldWord.toString();
+            return result;
+        }
+        CommonWord commonWord = new CommonWord(upperCode, context.currentGroup, definition, desctrption, false, 0, 0);
+        codeManager.save(commonWord);
+        return "新增成功";
+    }
+
+    @Override
+    @ShellMethod(value = "删除联想词", key = {"delete", "d"})
+    public String delete(@Size(min = 1) String code) {
+        String upperCode = code.toUpperCase();
+        CommonWord query = codeManager.queryOne(Query.builder().code(upperCode).build()).orElse(null);
+        String result;
+        if (query == null) {
+            result = "未能查询到联想词";
+            return result;
+        }
+        codeManager.delete(query.getId());
+        return "删除成功";
+    }
+
+    @Override
     @ShellMethod(value = "记忆测试,记忆所有没有记住的编码", key = {"t", "test"})
     public void test(@ShellOption(defaultValue = "", value = {"-r", "-row"}, help = "指定行进行测试") @Size(min = 0, max = 1) String row,
                      @ShellOption(defaultValue = "false", value = "--review", help = "是否是复习模式，默认false") Boolean isReview,
                      @ShellOption(defaultValue = "false", value = "--random", help = "是否随机，默认false") Boolean isRandom) throws IOException {
         Query query = new Query();
         query.setIsRemembered(isReview);
-        query.setHasWord(true);
-        query.setCode(row.toUpperCase());
+        query.setExistDefinition(true);
+        query.setPrefix(row.toUpperCase());
         List<CommonWord> codes = codeManager.queryByCondition(query);
         if (isRandom) {
             Collections.shuffle(codes);

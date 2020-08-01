@@ -21,11 +21,15 @@ public class Query {
      */
     private Boolean isRemembered;
     /**
-     * 是否存在联想词
+     * 是否存在定义
      */
-    private Boolean hasWord;
+    private Boolean existDefinition;
     /**
-     * 编码搜索 前缀模糊
+     * code搜索 前缀模糊
+     */
+    private String prefix;
+    /**
+     * code精准搜索
      */
     private String code;
     /**
