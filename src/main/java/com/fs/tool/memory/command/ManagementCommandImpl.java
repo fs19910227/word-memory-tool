@@ -48,6 +48,7 @@ public class ManagementCommandImpl implements ManagementCommand {
     @PostConstruct
     public void init() {
         writer = terminal.writer();
+        chooseGroup(DEFAULT_GROUP);
     }
 
     private void outputln(String out) {
