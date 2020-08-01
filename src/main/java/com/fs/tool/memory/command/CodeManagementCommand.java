@@ -13,13 +13,8 @@ import java.util.List;
  * @author zhaofushan
  * @date 2020/6/30
  */
-public interface ManagementCommand {
+public interface CodeManagementCommand {
 
-
-    static final String DEFAULT_GROUP = "DEFAULT";
-
-    @ShellMethod(value = "列出所有分组信息", key = {"groups"})
-    List<String> groups();
 
     @ShellMethod(value = "初始化数据", key = "init")
     void initData();
@@ -46,10 +41,6 @@ public interface ManagementCommand {
     void test(@ShellOption(defaultValue = "", value = {"-r", "-row"}, help = "指定行进行测试") @Size(min = 0, max = 1) String row,
               @ShellOption(defaultValue = "false", value = "--review", help = "是否是复习模式，默认false") Boolean isReview,
               @ShellOption(defaultValue = "false", value = "--random", help = "是否随机，默认false") Boolean isRandom) throws IOException;
-
-    @ShellMethod(value = "切换分组", key = "use")
-    void chooseGroup(@ShellOption(value = {"-g", "-group", "联想词数据会按照分组隔离"},
-            defaultValue = DEFAULT_GROUP) String group);
 
 
     @ShellMethod(value = "Excel import,需遵循导入模板", key = "import")

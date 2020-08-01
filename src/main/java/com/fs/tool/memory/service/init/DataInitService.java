@@ -1,4 +1,4 @@
-package com.fs.tool.memory.command.init;
+package com.fs.tool.memory.service.init;
 
 import com.fs.tool.memory.dao.model.CommonWord;
 import org.springframework.stereotype.Service;

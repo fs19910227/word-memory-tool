@@ -1,6 +1,6 @@
 package com.fs.tool.memory.service;
 
-import com.fs.tool.memory.command.Context;
+import com.fs.tool.memory.core.Context;
 import com.fs.tool.memory.dao.model.CommonWord;
 import com.fs.tool.memory.dao.model.WordGroup;
 import com.fs.tool.memory.dao.repository.CodeRepository;
