@@ -2,10 +2,10 @@ package com.fs.tool.memory.service.console;
 
 import org.jline.reader.LineReader;
 import org.jline.terminal.Terminal;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
 import java.io.PrintWriter;
 
 /**
@@ -15,18 +15,13 @@ import java.io.PrintWriter;
  * @date 2020/8/2 0002 3:07
  */
 @Service
-public class ConsoleService {
+public class ConsoleService implements InitializingBean {
     @Autowired
     private Terminal terminal;
     @Autowired
     private LineReader reader;
 
     private PrintWriter writer;
-
-    @PostConstruct
-    public void init() {
-        writer = terminal.writer();
-    }
 
     /**
      * 读入一行数据
@@ -62,5 +57,11 @@ public class ConsoleService {
     public void output(String out) {
         writer.print(out);
         writer.flush();
+    }
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        writer = terminal.writer();
+
     }
 }

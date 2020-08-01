@@ -7,11 +7,12 @@ import com.fs.tool.memory.service.CodeManager;
 import com.fs.tool.memory.service.console.ConsoleService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.event.ApplicationStartedEvent;
+import org.springframework.context.ApplicationListener;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
 import org.springframework.shell.standard.ShellOption;
 
-import javax.annotation.PostConstruct;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,7 +22,7 @@ import java.util.stream.Collectors;
  */
 @ShellComponent
 @Slf4j
-public class GroupManagementCommandImpl implements GroupManagementCommand {
+public class GroupManagementCommandImpl implements GroupManagementCommand, ApplicationListener<ApplicationStartedEvent> {
     @Autowired
     private CodeManager codeManager;
     @Autowired
@@ -29,12 +30,12 @@ public class GroupManagementCommandImpl implements GroupManagementCommand {
     @Autowired
     private ConsoleService consoleService;
 
-    @PostConstruct
-    public void init() {
+
+    @Override
+    public void onApplicationEvent(ApplicationStartedEvent event) {
         context.currentGroup = DEFAULT_GROUP;
         chooseGroup(DEFAULT_GROUP);
     }
-
 
     @Override
     @ShellMethod(value = "切换分组", key = {"use"})
