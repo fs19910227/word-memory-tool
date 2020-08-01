@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationStartedEvent;
 import org.springframework.context.ApplicationListener;
+import org.springframework.shell.standard.ShellCommandGroup;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
 import org.springframework.shell.standard.ShellOption;
@@ -21,6 +22,7 @@ import java.util.stream.Collectors;
  * @date 2020/6/30
  */
 @ShellComponent
+@ShellCommandGroup("group operate")
 @Slf4j
 public class GroupManagementCommandImpl implements GroupManagementCommand, ApplicationListener<ApplicationStartedEvent> {
     @Autowired
@@ -38,7 +40,7 @@ public class GroupManagementCommandImpl implements GroupManagementCommand, Appli
     }
 
     @Override
-    @ShellMethod(value = "切换分组", key = {"use"})
+    @ShellMethod(value = "switch group", key = {"use"})
     public void chooseGroup(@ShellOption(value = {"-g", "-group"},
             defaultValue = DEFAULT_GROUP) String group) {
         context.currentGroup = group;
@@ -52,7 +54,7 @@ public class GroupManagementCommandImpl implements GroupManagementCommand, Appli
     }
 
     @Override
-    @ShellMethod(value = "列出所有分组信息", key = {"groups"})
+    @ShellMethod(value = "list all groups", key = {"groups"})
     public List<String> groups() {
         return codeManager.groups().stream().map(WordGroup::toString).collect(Collectors.toList());
     }

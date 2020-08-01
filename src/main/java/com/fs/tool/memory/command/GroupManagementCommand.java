@@ -16,12 +16,10 @@ public interface GroupManagementCommand {
 
     String DEFAULT_GROUP = "DEFAULT";
 
-    @ShellMethod(value = "列出所有分组信息", key = {"groups"})
-    List<String> groups();
-
-
-    @ShellMethod(value = "切换分组", key = "use")
-    void chooseGroup(@ShellOption(value = {"-g", "-group", "联想词数据会按照分组隔离"},
+    @ShellMethod(value = "switch group", key = {"use"})
+    void chooseGroup(@ShellOption(value = {"-g", "-group"},
             defaultValue = DEFAULT_GROUP) String group);
 
+    @ShellMethod(value = "list all groups", key = {"groups"})
+    List<String> groups();
 }
