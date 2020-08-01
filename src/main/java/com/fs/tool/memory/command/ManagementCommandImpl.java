@@ -98,11 +98,13 @@ public class ManagementCommandImpl implements ManagementCommand {
         long total = codeManager.count(Query.builder().build());
         double hasWords = codeManager.count(Query.builder().existDefinition(true).build());
         double rememebered = codeManager.count(Query.builder().isRemembered(true).build());
+        List<String> groups = codeManager.groups().stream().map(g -> g.getName()).collect(Collectors.toList());
         String info = "当前分组:%s\n" +
+                "所有分组:%s\n" +
                 "联想编码总数:%d\n" +
                 "有定义的联想词:%.0f,占比%.2f%%\n" +
                 "已记住联想词数:%.0f,占比%.2f%%\n";
-        return String.format(info, context.currentGroup, total, hasWords, hasWords / total * 100, rememebered, rememebered / total * 100);
+        return String.format(info, context.currentGroup, groups, total, hasWords, hasWords / total * 100, rememebered, rememebered / total * 100);
     }
 
     @Override
