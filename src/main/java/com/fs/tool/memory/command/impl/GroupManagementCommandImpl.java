@@ -31,6 +31,7 @@ public class GroupManagementCommandImpl implements GroupManagementCommand {
 
     @PostConstruct
     public void init() {
+        context.currentGroup = DEFAULT_GROUP;
         chooseGroup(DEFAULT_GROUP);
     }
 

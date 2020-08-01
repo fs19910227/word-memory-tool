@@ -1,6 +1,6 @@
 package com.fs.tool.memory.core;
 
-import com.fs.tool.memory.command.CodeManagementCommand;
+import com.fs.tool.memory.command.GroupManagementCommand;
 import org.springframework.stereotype.Component;
 
 /**
@@ -9,5 +9,5 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class Context {
-    public String currentGroup = CodeManagementCommand.DEFAULT_GROUP;
+    public String currentGroup = GroupManagementCommand.DEFAULT_GROUP;
 }
