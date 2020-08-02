@@ -150,7 +150,7 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
         } else if (suffix) {
             query = builder.codeMode(Mode.SUFFIX).code(upperCode).build();
         } else {
-            query = builder.code(upperCode).build();
+            query = builder.codeMode(Mode.EXACT).code(upperCode).build();
         }
         int size = codeManager.deleteByCondition(query);
         return "deleted " + size;
