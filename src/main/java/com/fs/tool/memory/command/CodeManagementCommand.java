@@ -22,9 +22,9 @@ public interface CodeManagementCommand {
 
     @ShellMethod(value = "query word by code", key = {"query", "q"})
     List<String> query(@ShellOption(defaultValue = ShellOption.NULL) String code,
-                       @ShellOption(value = "-e", defaultValue = "", help = "是否存在定义") Boolean existDefinition,
-                       @ShellOption(value = "-r", defaultValue = "", help = "是否记住") Boolean remembered);
-
+                       @ShellOption(defaultValue = "false", value = {"-suffix", "-s"}, help = "suffix match,defult false") boolean suffix,
+                       @ShellOption(value = "-e", defaultValue = "", help = "exist definition") Boolean existDefinition,
+                       @ShellOption(value = "-r", defaultValue = "", help = "is remembered") Boolean remembered);
 
     @ShellMethod(value = "edit word", key = {"edit", "e"})
     String edit(@Size(min = 1) String code);
@@ -37,10 +37,14 @@ public interface CodeManagementCommand {
 
 
     @ShellMethod(value = "delete word by code", key = {"delete", "d"})
-    String delete(@Size(min = 1) String code);
+    String delete(@ShellOption(value = {"-value", "-v"}, help = "exact mathc") String code,
+                  @ShellOption(defaultValue = "false", value = {"-prefix", "-p"}, help = "prefix match,defalut false") boolean prefix,
+                  @ShellOption(defaultValue = "false", value = {"-suffix", "-s"}, help = "suffix match,defalut false") boolean suffix
+    );
+
 
     @ShellMethod(value = "memory test", key = {"t", "test"})
-    void test(@ShellOption(defaultValue = "", value = {"-r", "-row", "-prefix"}, help = "指定code prefix进行测试") @Size(min = 0, max = 1) String prefix,
+    void test(@ShellOption(defaultValue = "", value = {"-r", "-row", "-prefix"}, help = "指定code prefix进行测试") @Size(min = 0) String prefix,
               @ShellOption(defaultValue = "false", value = "--review", help = "是否是复习模式，默认false") Boolean isReview,
               @ShellOption(defaultValue = "false", value = "--random", help = "是否随机，默认false") Boolean isRandom) throws IOException;
 

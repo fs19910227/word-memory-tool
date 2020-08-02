@@ -3,7 +3,8 @@ package com.fs.tool.memory.command.impl;
 import com.fs.tool.memory.command.CodeManagementCommand;
 import com.fs.tool.memory.core.Context;
 import com.fs.tool.memory.dao.model.CommonWord;
-import com.fs.tool.memory.model.Query;
+import com.fs.tool.memory.dao.query.Mode;
+import com.fs.tool.memory.dao.query.Query;
 import com.fs.tool.memory.service.CodeManager;
 import com.fs.tool.memory.service.console.ConsoleService;
 import com.fs.tool.memory.service.imports.DataImportService;
@@ -71,6 +72,7 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
     @Override
     @ShellMethod(value = "query word by code", key = {"query", "q"})
     public List<String> query(@ShellOption(defaultValue = ShellOption.NULL) String code,
+                              @ShellOption(defaultValue = "false", value = {"-suffix", "-s"}, help = "suffix match,defult false") boolean suffix,
                               @ShellOption(value = "-e", defaultValue = "", help = "exist definition") Boolean existDefinition,
                               @ShellOption(value = "-r", defaultValue = "", help = "is remembered") Boolean remembered) {
         List<String> result = new ArrayList<>();
@@ -82,7 +84,12 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
         Query query = new Query();
         query.setExistDefinition(existDefinition);
         query.setIsRemembered(remembered);
-        query.setPrefix(code);
+        query.setCode(code);
+        if (suffix) {
+            query.setCodeMode(Mode.SUFFIX);
+        } else {
+            query.setCodeMode(Mode.PREFIX);
+        }
         return codeManager.queryByCondition(query).stream()
                 .map(info -> info.toString())
                 .collect(Collectors.toList());
@@ -131,27 +138,34 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
 
     @Override
     @ShellMethod(value = "delete word by code", key = {"delete", "d"})
-    public String delete(@Size(min = 1) String code) {
+    public String delete(@ShellOption(value = {"-value", "-v"}, help = "exact match") String code,
+                         @ShellOption(defaultValue = "false", value = {"-prefix", "-p"}, help = "prefix match,default false") boolean prefix,
+                         @ShellOption(defaultValue = "false", value = {"-suffix", "-s"}, help = "suffix match,defult false") boolean suffix
+    ) {
+        Query.QueryBuilder builder = Query.builder();
         String upperCode = code.toUpperCase();
-        CommonWord query = codeManager.queryOne(Query.builder().code(upperCode).build()).orElse(null);
-        String result;
-        if (query == null) {
-            result = "未能查询到联想词";
-            return result;
+        Query query = null;
+        if (prefix) {
+            query = builder.codeMode(Mode.PREFIX).code(upperCode).build();
+        } else if (suffix) {
+            query = builder.codeMode(Mode.SUFFIX).code(upperCode).build();
+        } else {
+            query = builder.code(upperCode).build();
         }
-        codeManager.delete(query.getId());
-        return "删除成功";
+        int size = codeManager.deleteByCondition(query);
+        return "deleted " + size;
     }
 
     @Override
     @ShellMethod(value = "memory test", key = {"t", "test"})
-    public void test(@ShellOption(defaultValue = "", value = {"-r", "-row", "-prefix"}, help = "指定code prefix进行测试") @Size(min = 0, max = 1) String prefix,
+    public void test(@ShellOption(defaultValue = "", value = {"-r", "-row", "-prefix"}, help = "指定code prefix进行测试") @Size(min = 0) String prefix,
                      @ShellOption(defaultValue = "false", value = "--review", help = "是否是复习模式，默认false") Boolean isReview,
                      @ShellOption(defaultValue = "false", value = "--random", help = "是否随机，默认false") Boolean isRandom) throws IOException {
         Query query = new Query();
         query.setIsRemembered(isReview);
         query.setExistDefinition(true);
-        query.setPrefix(prefix.toUpperCase());
+        query.setCodeMode(Mode.PREFIX);
+        query.setCode(prefix.toUpperCase());
         List<CommonWord> codes = codeManager.queryByCondition(query);
         if (isRandom) {
             Collections.shuffle(codes);

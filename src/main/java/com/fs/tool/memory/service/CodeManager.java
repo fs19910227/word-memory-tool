@@ -3,9 +3,10 @@ package com.fs.tool.memory.service;
 import com.fs.tool.memory.core.Context;
 import com.fs.tool.memory.dao.model.CommonWord;
 import com.fs.tool.memory.dao.model.WordGroup;
+import com.fs.tool.memory.dao.query.Mode;
+import com.fs.tool.memory.dao.query.Query;
 import com.fs.tool.memory.dao.repository.CodeRepository;
 import com.fs.tool.memory.dao.repository.GroupRepository;
-import com.fs.tool.memory.model.Query;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
 import org.springframework.data.jpa.domain.Specification;
@@ -150,12 +151,27 @@ public class CodeManager {
     /**
      * 删除联想词
      *
-     * @param id
+     * @param id 主键
      */
     public void delete(String id) {
         codeRepository.deleteById(id);
     }
 
+    /**
+     * 条件删除
+     *
+     * @param query
+     * @return size of deleted
+     */
+    public int deleteByCondition(Query query) {
+        query.setGroup(context.currentGroup);
+        CodeSpecification codeSpecification = new CodeSpecification(query);
+        List<CommonWord> all = codeRepository.findAll(codeSpecification);
+        for (CommonWord commonWord : all) {
+            codeRepository.deleteById(commonWord.getId());
+        }
+        return all.size();
+    }
 
     /**
      * 通用条件查询
@@ -174,13 +190,19 @@ public class CodeManager {
             if (group != null) {
                 predicates.add(criteriaBuilder.equal(root.get("wordGroup"), group));
             }
-            String prefix = condition.getPrefix();
-            if (!StringUtils.isEmpty(prefix)) {
-                predicates.add(criteriaBuilder.like(root.get("key"), prefix + "%"));
-            } else {
-                String code = condition.getCode();
-                if (!StringUtils.isEmpty(code)) {
-                    predicates.add(criteriaBuilder.equal(root.get("key"), code));
+            String code = condition.getCode();
+            if (!StringUtils.isEmpty(code)) {
+                Mode codeMode = condition.getCodeMode();
+                switch (codeMode) {
+                    case EXACT:
+                        predicates.add(criteriaBuilder.equal(root.get("key"), code));
+                        break;
+                    case PREFIX:
+                        predicates.add(criteriaBuilder.like(root.get("key"), code + "%"));
+                        break;
+                    case SUFFIX:
+                        predicates.add(criteriaBuilder.like(root.get("key"), "%" + code));
+                        break;
                 }
             }
             Boolean isRemembered = condition.getIsRemembered();

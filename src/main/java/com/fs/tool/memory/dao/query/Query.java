@@ -1,4 +1,4 @@
-package com.fs.tool.memory.model;
+package com.fs.tool.memory.dao.query;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -25,11 +25,11 @@ public class Query {
      */
     private Boolean existDefinition;
     /**
-     * code搜索 前缀模糊
+     * code search mode
      */
-    private String prefix;
+    private Mode codeMode = Mode.EXACT;
     /**
-     * code精准搜索
+     * code搜索词
      */
     private String code;
     /**
