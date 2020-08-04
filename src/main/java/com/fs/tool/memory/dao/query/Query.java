@@ -36,4 +36,13 @@ public class Query {
      * 分组信息
      */
     private String group;
+    /**
+     * 通过测试的次数区间
+     */
+    private Region passTimes;
+
+    public static class Region {
+        public int start = 0;
+        public int end = Integer.MAX_VALUE;
+    }
 }

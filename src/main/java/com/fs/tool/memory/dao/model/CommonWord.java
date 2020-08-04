@@ -64,11 +64,11 @@ public class CommonWord {
     @Override
     public String toString() {
         return "[" +
-                "编码:'" + key + '\'' +
-                ", 联想词:'" + definition + '\'' +
-                ", 是否记住:" + (remembered ? "Y" : "N") +
-                ", 通过测试次数:" + passTime +
-                ", 总测试测试:" + testTime +
+                "code:'" + key + '\'' +
+                ", word:'" + definition + '\'' +
+                ", isRemembered:" + (remembered ? "Y" : "N") +
+                ", pass times:" + passTime +
+                ", total times:" + testTime +
                 ']';
     }
 }

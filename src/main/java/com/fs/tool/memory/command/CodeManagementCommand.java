@@ -44,9 +44,10 @@ public interface CodeManagementCommand {
 
 
     @ShellMethod(value = "memory test", key = {"t", "test"})
-    void test(@ShellOption(defaultValue = "", value = {"-r", "-row", "-prefix"}, help = "指定code prefix进行测试") @Size(min = 0) String prefix,
-              @ShellOption(defaultValue = "false", value = "--review", help = "是否是复习模式，默认false") Boolean isReview,
-              @ShellOption(defaultValue = "false", value = "--random", help = "是否随机，默认false") Boolean isRandom) throws IOException;
+    void test(@ShellOption(defaultValue = "", value = {"-r", "-row", "-prefix"}, help = "code prefix match") @Size(min = 0) String prefix,
+              @ShellOption(defaultValue = "false", value = "--review", help = "review word，default false") Boolean isReview,
+              @ShellOption(defaultValue = "false", value = "--random", help = "random word，default false") Boolean isRandom,
+              @ShellOption(defaultValue = "false", value = "--repeat", help = "repeat until remember at least once，default false") Boolean repeat) throws IOException;
 
     @ShellMethod(value = "Delete all", key = "drop")
     String deleteAll();

@@ -18,9 +18,7 @@ import org.springframework.shell.standard.ShellOption;
 
 import javax.validation.constraints.Size;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -158,9 +156,10 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
 
     @Override
     @ShellMethod(value = "memory test", key = {"t", "test"})
-    public void test(@ShellOption(defaultValue = "", value = {"-r", "-row", "-prefix"}, help = "指定code prefix进行测试") @Size(min = 0) String prefix,
-                     @ShellOption(defaultValue = "false", value = "--review", help = "是否是复习模式，默认false") Boolean isReview,
-                     @ShellOption(defaultValue = "false", value = "--random", help = "是否随机，默认false") Boolean isRandom) throws IOException {
+    public void test(@ShellOption(defaultValue = "", value = {"-r", "-row", "-prefix"}, help = "code prefix match") @Size(min = 0) String prefix,
+                     @ShellOption(defaultValue = "false", value = "--review", help = "review word，default false") Boolean isReview,
+                     @ShellOption(defaultValue = "false", value = "--random", help = "random word，default false") Boolean isRandom,
+                     @ShellOption(defaultValue = "false", value = "--repeat", help = "repeat until remember at least once，default false") Boolean repeat) throws IOException {
         Query query = new Query();
         query.setIsRemembered(isReview);
         query.setExistDefinition(true);
@@ -170,47 +169,63 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
         if (isRandom) {
             Collections.shuffle(codes);
         }
-        consoleService.outputLn("进入测试模式\n" +
-                "是否测试已记住code：" + isReview + "\n" +
-                "随机code：" + isRandom + "\n" +
-                "测试code总数：" + codes.size());
-        for (int i = 0; i < codes.size(); i++) {
-            CommonWord code = codes.get(i);
-            consoleService.outputLn("=========================================================================");
-            consoleService.outputLn(String.format("current code:%s,please input definition.(Quit:q,Skip:Enter,Previous:p,Mark remembered:r)", code.getKey()));
-            String input = consoleService.readLine();
-            switch (input) {
-                case "p":
-                    i = i < 1 ? -1 : i - 2;
-                    break;
-                case "":
-                    consoleService.outputLn(code.toString());
-                    continue;
-                case "r":
-                    code.setPassTime(code.getPassTime() + 1);
-                    code.setTestTime(code.getTestTime() + 1);
-                    code.setRemembered(true);
-                    consoleService.outputLn(code.toString());
-                    codeManager.save(code);
-                    continue;
-                case "q":
-                    consoleService.outputLn("quit test mode");
-                    return;
-                default:
-                    code.setTestTime(code.getTestTime() + 1);
-                    String source = code.getDefinition().toUpperCase();
-                    String target = input.toUpperCase();
-                    if (source.equals(target)) {
+        consoleService.outputLn("ENTER TEST MODE\n" +
+                "test remembered code：" + isReview + "\n" +
+                "random code：" + isRandom + "\n" +
+                "repeat code：" + repeat + "\n" +
+                "total test codes：" + codes.size());
+        do {
+            Set<Integer> rememberedWords = new HashSet<>();
+            for (int i = 0; i < codes.size(); i++) {
+                CommonWord code = codes.get(i);
+                consoleService.outputLn("=========================================================================");
+                consoleService.outputLn(String.format("current code:%s,please input definition.(Quit:q,Skip:Enter,Previous:p,Mark remembered:r)", code.getKey()));
+                String input = consoleService.readLine();
+                switch (input) {
+                    case "p":
+                        i = i < 1 ? -1 : i - 2;
+                        break;
+                    case "":
+                        code.setTestTime(code.getTestTime() + 1);
+                        codeManager.save(code);
+                        consoleService.outputLn(code.toString());
+                        continue;
+                    case "r":
                         code.setPassTime(code.getPassTime() + 1);
-                        consoleService.outputLn("Right answer");
+                        code.setTestTime(code.getTestTime() + 1);
+                        code.setRemembered(true);
                         consoleService.outputLn(code.toString());
                         codeManager.save(code);
-                    } else {
-                        consoleService.outputLn("Wrong answer");
-                        consoleService.outputLn(code.toString());
-                    }
+                        continue;
+                    case "q":
+                        consoleService.outputLn("quit test mode");
+                        return;
+                    default:
+                        code.setTestTime(code.getTestTime() + 1);
+                        String source = code.getDefinition().toUpperCase();
+                        String target = input.toUpperCase();
+                        if (source.equals(target)) {
+                            code.setPassTime(code.getPassTime() + 1);
+                            consoleService.outputLn("Right answer");
+                            consoleService.outputLn(code.toString());
+                            codeManager.save(code);
+                            rememberedWords.add(i);
+                        } else {
+                            consoleService.outputLn("Wrong answer");
+                            consoleService.outputLn(code.toString());
+                        }
+                }
             }
-        }
+            consoleService.outputLn("Test complete one cycle,remembered:" + rememberedWords.size());
+            List<Integer> rememberedIndex = new ArrayList<>(rememberedWords);
+            rememberedIndex.sort(Comparator.naturalOrder());
+            for (int i = 0; i < rememberedIndex.size(); i++) {
+                codes.remove(rememberedIndex.get(i) - i);
+            }
+            if (codes.isEmpty()) {
+                repeat = false;
+            }
+        } while (repeat);
     }
 
     @Override
