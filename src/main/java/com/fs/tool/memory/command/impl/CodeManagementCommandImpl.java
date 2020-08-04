@@ -3,6 +3,7 @@ package com.fs.tool.memory.command.impl;
 import com.fs.tool.memory.command.CodeManagementCommand;
 import com.fs.tool.memory.core.Context;
 import com.fs.tool.memory.dao.model.CommonWord;
+import com.fs.tool.memory.dao.model.WordGroup;
 import com.fs.tool.memory.dao.query.Mode;
 import com.fs.tool.memory.dao.query.Query;
 import com.fs.tool.memory.service.CodeManager;
@@ -17,7 +18,6 @@ import org.springframework.shell.standard.ShellMethod;
 import org.springframework.shell.standard.ShellOption;
 
 import javax.validation.constraints.Size;
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -54,17 +54,18 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
     }
 
     @ShellMethod(value = "show statistic info", key = {"info", "statistic"})
+    @Override
     public String statistic() {
         long total = codeManager.count(Query.builder().build());
         double hasWords = codeManager.count(Query.builder().existDefinition(true).build());
-        double rememebered = codeManager.count(Query.builder().isRemembered(true).build());
-        List<String> groups = codeManager.groups().stream().map(g -> g.getName()).collect(Collectors.toList());
+        double remembered = codeManager.count(Query.builder().isRemembered(true).build());
+        List<String> groups = codeManager.groups().stream().map(WordGroup::getName).collect(Collectors.toList());
         String info = "当前分组:%s\n" +
                 "所有分组:%s\n" +
                 "联想编码总数:%d\n" +
                 "有定义的联想词:%.0f,占比%.2f%%\n" +
                 "已记住联想词数:%.0f,占比%.2f%%\n";
-        return String.format(info, context.currentGroup, groups, total, hasWords, hasWords / total * 100, rememebered, rememebered / total * 100);
+        return String.format(info, context.currentGroup, groups, total, hasWords, hasWords / total * 100, remembered, remembered / total * 100);
     }
 
     @Override
@@ -89,7 +90,7 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
             query.setCodeMode(Mode.PREFIX);
         }
         return codeManager.queryByCondition(query).stream()
-                .map(info -> info.toString())
+                .map(CommonWord::toString)
                 .collect(Collectors.toList());
     }
 
@@ -105,14 +106,12 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
         }
         consoleService.outputLn(String.format("Edit word , code:%s,old definition:%s。(type q to exit)", query.getKey(), query.getDefinition()));
         String input = consoleService.readLine("please input new definition:");
-        switch (input) {
-            case "q":
-                result = "quit edit mode";
-                break;
-            default:
-                query.setDefinition(input.trim());
-                codeManager.save(query);
-                result = "word definition " + query.getDefinition() + " saved";
+        if ("q".equals(input)) {
+            result = "quit edit mode";
+        } else {
+            query.setDefinition(input.trim());
+            codeManager.save(query);
+            result = "word definition " + query.getDefinition() + " saved";
         }
         return result;
     }
@@ -121,15 +120,15 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
     @ShellMethod(value = "add new word", key = {"add", "a"})
     public String add(@Size(min = 1) String code,
                       @ShellOption(defaultValue = ShellOption.NULL) String definition,
-                      @ShellOption(defaultValue = ShellOption.NULL) String desctrption) {
+                      @ShellOption(defaultValue = ShellOption.NULL) String description) {
         String upperCode = code.toUpperCase();
-        CommonWord oldWord = codeManager.queryOne(Query.builder().code(upperCode).build()).orElse(null);
+        CommonWord oldWord = codeManager.queryOne(Query.builder().codeMode(Mode.EXACT).code(upperCode).build()).orElse(null);
         String result;
         if (oldWord != null) {
             result = "word already exist," + oldWord.toString();
             return result;
         }
-        CommonWord commonWord = new CommonWord(upperCode, context.currentGroup, definition, desctrption, false, 0, 0);
+        CommonWord commonWord = new CommonWord(upperCode, context.currentGroup, definition, description, false, 0, 0);
         codeManager.save(commonWord);
         return "add word success";
     }
@@ -142,7 +141,7 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
     ) {
         Query.QueryBuilder builder = Query.builder();
         String upperCode = code.toUpperCase();
-        Query query = null;
+        Query query;
         if (prefix) {
             query = builder.codeMode(Mode.PREFIX).code(upperCode).build();
         } else if (suffix) {
@@ -156,10 +155,10 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
 
     @Override
     @ShellMethod(value = "memory test", key = {"t", "test"})
-    public void test(@ShellOption(defaultValue = "", value = {"-r", "-row", "-prefix"}, help = "code prefix match") @Size(min = 0) String prefix,
+    public void test(@ShellOption(defaultValue = "", value = {"-r", "-row", "-prefix"}, help = "code prefix match") @Size() String prefix,
                      @ShellOption(defaultValue = "false", value = "--review", help = "review word，default false") Boolean isReview,
                      @ShellOption(defaultValue = "false", value = "--random", help = "random word，default false") Boolean isRandom,
-                     @ShellOption(defaultValue = "false", value = "--repeat", help = "repeat until remember at least once，default false") Boolean repeat) throws IOException {
+                     @ShellOption(defaultValue = "false", value = "--repeat", help = "repeat until remember at least once，default false") Boolean repeat) {
         Query query = new Query();
         query.setIsRemembered(isReview);
         query.setExistDefinition(true);
