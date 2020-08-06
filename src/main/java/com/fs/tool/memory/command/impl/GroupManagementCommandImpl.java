@@ -2,9 +2,9 @@ package com.fs.tool.memory.command.impl;
 
 import com.fs.tool.memory.command.GroupManagementCommand;
 import com.fs.tool.memory.core.Context;
-import com.fs.tool.memory.dao.model.WordGroup;
-import com.fs.tool.memory.service.CodeManager;
-import com.fs.tool.memory.service.console.ConsoleService;
+import com.fs.tool.memory.dao.model.WordGroupDO;
+import com.fs.tool.memory.dao.repository.ICodeRepository;
+import com.fs.tool.memory.domain.service.IOService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationStartedEvent;
@@ -26,11 +26,11 @@ import java.util.stream.Collectors;
 @Slf4j
 public class GroupManagementCommandImpl implements GroupManagementCommand, ApplicationListener<ApplicationStartedEvent> {
     @Autowired
-    private CodeManager codeManager;
+    private ICodeRepository codeManager;
     @Autowired
     private Context context;
     @Autowired
-    private ConsoleService consoleService;
+    private IOService consoleService;
 
 
     @Override
@@ -44,7 +44,7 @@ public class GroupManagementCommandImpl implements GroupManagementCommand, Appli
     public void chooseGroup(@ShellOption(value = {"-g", "-group"},
             defaultValue = DEFAULT_GROUP) String group) {
         context.currentGroup = group;
-        WordGroup wordGroup = new WordGroup();
+        WordGroupDO wordGroup = new WordGroupDO();
         wordGroup.setName(group);
         wordGroup.setDescription(group);
         if (!codeManager.existGroup(wordGroup)) {
@@ -56,7 +56,7 @@ public class GroupManagementCommandImpl implements GroupManagementCommand, Appli
     @Override
     @ShellMethod(value = "list all groups", key = {"groups"})
     public List<String> groups() {
-        return codeManager.groups().stream().map(WordGroup::toString).collect(Collectors.toList());
+        return codeManager.groups().stream().map(WordGroupDO::toString).collect(Collectors.toList());
     }
 
 

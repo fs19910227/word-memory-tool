@@ -2,12 +2,14 @@ package com.fs.tool.memory.command.impl;
 
 import com.fs.tool.memory.command.CodeManagementCommand;
 import com.fs.tool.memory.core.Context;
-import com.fs.tool.memory.dao.model.CommonWord;
-import com.fs.tool.memory.dao.model.WordGroup;
+import com.fs.tool.memory.dao.model.CommonWordDO;
+import com.fs.tool.memory.dao.model.WordGroupDO;
 import com.fs.tool.memory.dao.query.Mode;
 import com.fs.tool.memory.dao.query.Query;
-import com.fs.tool.memory.service.CodeManager;
-import com.fs.tool.memory.service.console.ConsoleService;
+import com.fs.tool.memory.dao.repository.ICodeRepository;
+import com.fs.tool.memory.domain.cmd.TestCmd;
+import com.fs.tool.memory.domain.service.IOService;
+import com.fs.tool.memory.domain.service.WordDomainService;
 import com.fs.tool.memory.service.imports.DataImportService;
 import com.fs.tool.memory.service.init.DataInitService;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +20,8 @@ import org.springframework.shell.standard.ShellMethod;
 import org.springframework.shell.standard.ShellOption;
 
 import javax.validation.constraints.Size;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -30,7 +33,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class CodeManagementCommandImpl implements CodeManagementCommand {
     @Autowired
-    private CodeManager codeManager;
+    private ICodeRepository codeManager;
     @Autowired
     private DataInitService dataInitService;
     @Autowired
@@ -38,8 +41,9 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
     @Autowired
     private Context context;
     @Autowired
-    private ConsoleService consoleService;
-
+    private IOService consoleService;
+    @Autowired
+    private WordDomainService wordDomainService;
 
     @Override
     @ShellMethod(value = "init data", key = "init")
@@ -48,7 +52,7 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
             consoleService.outputLn("group " + context.currentGroup + " already has data!,won't init");
             return;
         }
-        List<CommonWord> commonWords = dataInitService.biInit(context.currentGroup, DataInitService.DEFAULT_ALPHABET_LIST);
+        List<CommonWordDO> commonWords = dataInitService.biInit(context.currentGroup, DataInitService.DEFAULT_ALPHABET_LIST);
         codeManager.saveAll(commonWords);
         consoleService.outputLn("init data,current group:" + context.currentGroup);
     }
@@ -59,7 +63,7 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
         long total = codeManager.count(Query.builder().build());
         double hasWords = codeManager.count(Query.builder().existDefinition(true).build());
         double remembered = codeManager.count(Query.builder().isRemembered(true).build());
-        List<String> groups = codeManager.groups().stream().map(WordGroup::getName).collect(Collectors.toList());
+        List<String> groups = codeManager.groups().stream().map(WordGroupDO::getName).collect(Collectors.toList());
         String info = "当前分组:%s\n" +
                 "所有分组:%s\n" +
                 "联想编码总数:%d\n" +
@@ -90,7 +94,7 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
             query.setCodeMode(Mode.PREFIX);
         }
         return codeManager.queryByCondition(query).stream()
-                .map(CommonWord::toString)
+                .map(CommonWordDO::toString)
                 .collect(Collectors.toList());
     }
 
@@ -98,7 +102,7 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
     @Override
     @ShellMethod(value = "edit word", key = {"edit", "e"})
     public String edit(@Size(min = 1) String code) {
-        CommonWord query = codeManager.queryOne(Query.builder().code(code.toUpperCase()).build()).orElse(null);
+        CommonWordDO query = codeManager.queryOne(Query.builder().codeMode(Mode.EXACT).code(code.toUpperCase()).build()).orElse(null);
         String result;
         if (query == null) {
             result = "word not find";
@@ -122,13 +126,13 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
                       @ShellOption(defaultValue = ShellOption.NULL) String definition,
                       @ShellOption(defaultValue = ShellOption.NULL) String description) {
         String upperCode = code.toUpperCase();
-        CommonWord oldWord = codeManager.queryOne(Query.builder().codeMode(Mode.EXACT).code(upperCode).build()).orElse(null);
+        CommonWordDO oldWord = codeManager.queryOne(Query.builder().codeMode(Mode.EXACT).code(upperCode).build()).orElse(null);
         String result;
         if (oldWord != null) {
             result = "word already exist," + oldWord.toString();
             return result;
         }
-        CommonWord commonWord = new CommonWord(upperCode, context.currentGroup, definition, description, false, 0, 0);
+        CommonWordDO commonWord = new CommonWordDO(upperCode, context.currentGroup, definition, description, false, 0, 0);
         codeManager.save(commonWord);
         return "add word success";
     }
@@ -159,72 +163,27 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
                      @ShellOption(defaultValue = "false", value = "--review", help = "review word，default false") Boolean isReview,
                      @ShellOption(defaultValue = "false", value = "--random", help = "random word，default false") Boolean isRandom,
                      @ShellOption(defaultValue = "false", value = "--repeat", help = "repeat until remember at least once，default false") Boolean repeat) {
+        if (wordDomainService.hasSavedTest()) {
+            String out = "Detect has staging test,continue? y/n(default y)";
+            String ok = consoleService.readLine(out);
+            if (!ok.equals("n")) {
+                wordDomainService.resume().start();
+                return;
+            }
+        }
+
         Query query = new Query();
         query.setIsRemembered(isReview);
         query.setExistDefinition(true);
         query.setCodeMode(Mode.PREFIX);
         query.setCode(prefix.toUpperCase());
-        List<CommonWord> codes = codeManager.queryByCondition(query);
-        if (isRandom) {
-            Collections.shuffle(codes);
-        }
-        consoleService.outputLn("ENTER TEST MODE\n" +
-                "test remembered code：" + isReview + "\n" +
-                "random code：" + isRandom + "\n" +
-                "repeat code：" + repeat + "\n" +
-                "total test codes：" + codes.size());
-        do {
-            Set<Integer> rememberedWords = new HashSet<>();
-            for (int i = 0; i < codes.size(); i++) {
-                CommonWord code = codes.get(i);
-                consoleService.outputLn("=========================================================================");
-                consoleService.outputLn(String.format("current code:%s,please input definition.(Quit:q,Skip:Enter,Previous:p,Mark remembered:r)", code.getKey()));
-                String input = consoleService.readLine();
-                switch (input) {
-                    case "p":
-                        i = i < 1 ? -1 : i - 2;
-                        break;
-                    case "":
-                        code.setTestTime(code.getTestTime() + 1);
-                        codeManager.save(code);
-                        consoleService.outputLn(code.toString());
-                        continue;
-                    case "r":
-                        code.setPassTime(code.getPassTime() + 1);
-                        code.setTestTime(code.getTestTime() + 1);
-                        code.setRemembered(true);
-                        consoleService.outputLn(code.toString());
-                        codeManager.save(code);
-                        continue;
-                    case "q":
-                        consoleService.outputLn("quit test mode");
-                        return;
-                    default:
-                        code.setTestTime(code.getTestTime() + 1);
-                        String source = code.getDefinition().toUpperCase();
-                        String target = input.toUpperCase();
-                        if (source.equals(target)) {
-                            code.setPassTime(code.getPassTime() + 1);
-                            consoleService.outputLn("Right answer");
-                            consoleService.outputLn(code.toString());
-                            codeManager.save(code);
-                            rememberedWords.add(i);
-                        } else {
-                            consoleService.outputLn("Wrong answer");
-                            consoleService.outputLn(code.toString());
-                        }
-                }
-            }
-            consoleService.outputLn("Test complete one cycle,remembered:" + rememberedWords.size());
-            List<Integer> rememberedIndex = new ArrayList<>(rememberedWords);
-            rememberedIndex.sort(Comparator.naturalOrder());
-            for (int i = 0; i < rememberedIndex.size(); i++) {
-                codes.remove(rememberedIndex.get(i) - i);
-            }
-            if (codes.isEmpty()) {
-                repeat = false;
-            }
-        } while (repeat);
+        List<CommonWordDO> codes = codeManager.queryByCondition(query);
+
+        TestCmd testCmd = new TestCmd()
+                .setRandom(isRandom)
+                .setRepeatMode(repeat)
+                .setWordDOList(codes);
+        wordDomainService.createTest(testCmd).start();
     }
 
     @Override

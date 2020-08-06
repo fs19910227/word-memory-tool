@@ -3,8 +3,8 @@ package com.fs.tool.memory.service.imports;
 import com.alibaba.excel.context.AnalysisContext;
 import com.alibaba.excel.event.AnalysisEventListener;
 import com.fs.tool.memory.core.Context;
-import com.fs.tool.memory.dao.model.CommonWord;
-import com.fs.tool.memory.dao.repository.CodeRepository;
+import com.fs.tool.memory.dao.mapper.CodeMapper;
+import com.fs.tool.memory.dao.model.CommonWordDO;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -16,11 +16,11 @@ import java.util.stream.Collectors;
  * @date 2020/6/30
  */
 public class DataImportListener extends AnalysisEventListener {
-    private final CodeRepository codeRepository;
+    private final CodeMapper codeRepository;
     private final List<String> heads = new ArrayList<>();
     private final boolean overwrite;
     private final Context context;
-    private List<CommonWord> result = new ArrayList<>();
+    private List<CommonWordDO> result = new ArrayList<>();
 
     /**
      * @param codeRepository manager
@@ -28,7 +28,7 @@ public class DataImportListener extends AnalysisEventListener {
      * @param overwrite      是否覆盖
      */
     public DataImportListener(
-            CodeRepository codeRepository,
+            CodeMapper codeRepository,
             Context context, boolean overwrite) {
         this.codeRepository = codeRepository;
         this.overwrite = overwrite;
@@ -58,16 +58,16 @@ public class DataImportListener extends AnalysisEventListener {
                 continue;
             }
             String currentGroup = this.context.currentGroup;
-            CommonWord aDefault = new CommonWord(first + second, currentGroup, word, "", false, 0, 0);
+            CommonWordDO aDefault = new CommonWordDO(first + second, currentGroup, word, "", false, 0, 0);
             result.add(aDefault);
         }
     }
 
     @Override
     public void doAfterAllAnalysed(AnalysisContext analysisContext) {
-        List<CommonWord> collect = result.stream()
+        List<CommonWordDO> collect = result.stream()
                 .filter(code -> {
-                    Optional<CommonWord> commonWord = codeRepository.findByKeyAndWordGroup(code.getKey(), code.getWordGroup());
+                    Optional<CommonWordDO> commonWord = codeRepository.findByKeyAndWordGroup(code.getKey(), code.getWordGroup());
                     commonWord.ifPresent(word -> code.setId(word.getId()));
                     return overwrite || !commonWord.isPresent();
                 })

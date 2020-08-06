@@ -1,6 +1,6 @@
 package com.fs.tool.memory.service.init;
 
-import com.fs.tool.memory.dao.model.CommonWord;
+import com.fs.tool.memory.dao.model.CommonWordDO;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -33,13 +33,13 @@ public class DataInitService {
      * @param group        编码分组
      * @return
      */
-    public List<CommonWord> biInit(String group, List<String> codeMetaList) {
-        List<CommonWord> resultList = new ArrayList<>();
+    public List<CommonWordDO> biInit(String group, List<String> codeMetaList) {
+        List<CommonWordDO> resultList = new ArrayList<>();
         for (int i = 0; i < codeMetaList.size(); i++) {
             String l = codeMetaList.get(i).toUpperCase();
             for (int j = 0; j < codeMetaList.size(); j++) {
                 String c = codeMetaList.get(j).toUpperCase();
-                CommonWord commonWord = new CommonWord(l + c, group, null, null, false, 0, 0);
+                CommonWordDO commonWord = new CommonWordDO(l + c, group, null, null, false, 0, 0);
                 resultList.add(commonWord);
             }
         }
@@ -53,11 +53,11 @@ public class DataInitService {
      * @param group        编码分组
      * @return
      */
-    public List<CommonWord> linearWordInit(String group, List<String> codeMetaList) {
-        List<CommonWord> resultList = new ArrayList<>();
+    public List<CommonWordDO> linearWordInit(String group, List<String> codeMetaList) {
+        List<CommonWordDO> resultList = new ArrayList<>();
         for (String s : codeMetaList) {
             String l = s.toUpperCase();
-            CommonWord commonWord = new CommonWord(l, group, null, null, false, 0, 0);
+            CommonWordDO commonWord = new CommonWordDO(l, group, null, null, false, 0, 0);
             resultList.add(commonWord);
         }
         return resultList;

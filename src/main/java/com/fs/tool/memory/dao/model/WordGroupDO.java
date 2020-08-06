@@ -17,7 +17,7 @@ import javax.persistence.Table;
 @Data
 @NoArgsConstructor
 @Table(name = "word_group")
-public class WordGroup {
+public class WordGroupDO {
     @Id
     private String id;
     /**

@@ -2,7 +2,7 @@ package com.fs.tool.memory.service.imports;
 
 import com.alibaba.excel.EasyExcel;
 import com.fs.tool.memory.core.Context;
-import com.fs.tool.memory.dao.repository.CodeRepository;
+import com.fs.tool.memory.dao.mapper.CodeMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -17,7 +17,7 @@ import java.io.InputStream;
 @Service
 public class DataImportService {
     @Autowired
-    private CodeRepository codeRepository;
+    private CodeMapper codeRepository;
     @Autowired
     private Context context;
 

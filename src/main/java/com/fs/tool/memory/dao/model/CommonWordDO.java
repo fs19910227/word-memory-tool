@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -18,7 +19,7 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 @Table(name = "common_word")
-public class CommonWord {
+public class CommonWordDO {
     @Id
     private String id;
     /**
@@ -50,7 +51,7 @@ public class CommonWord {
      */
     private Integer testTime;
 
-    public CommonWord(String key, String group, String wordDefinition, String wordDescription, boolean remembered, Integer passTime, Integer testTime) {
+    public CommonWordDO(String key, String group, String wordDefinition, String wordDescription, boolean remembered, Integer passTime, Integer testTime) {
         this.id = UUID.randomUUID().toString();
         this.key = key;
         this.wordGroup = group;
@@ -70,5 +71,18 @@ public class CommonWord {
                 ", pass times:" + passTime +
                 ", total times:" + testTime +
                 ']';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        CommonWordDO that = (CommonWordDO) o;
+        return id.equals(that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
     }
 }

@@ -1,4 +1,4 @@
-package com.fs.tool.memory.service.console;
+package com.fs.tool.memory.domain.service;
 
 import org.jline.reader.LineReader;
 import org.jline.terminal.Terminal;
@@ -15,7 +15,7 @@ import java.io.PrintWriter;
  * @date 2020/8/2 0002 3:07
  */
 @Service
-public class ConsoleService implements InitializingBean {
+public class ConsoleService implements InitializingBean, IOService {
     @Autowired
     private Terminal terminal;
     @Autowired
@@ -28,6 +28,7 @@ public class ConsoleService implements InitializingBean {
      *
      * @param prompt 提示信息
      */
+    @Override
     public String readLine(String prompt) {
         return reader.readLine(prompt);
     }
@@ -35,6 +36,7 @@ public class ConsoleService implements InitializingBean {
     /**
      * 读入一行数据
      */
+    @Override
     public String readLine() {
         return reader.readLine();
     }
@@ -44,6 +46,7 @@ public class ConsoleService implements InitializingBean {
      *
      * @param out
      */
+    @Override
     public void outputLn(String out) {
         writer.println(out);
         writer.flush();
@@ -54,6 +57,7 @@ public class ConsoleService implements InitializingBean {
      *
      * @param out
      */
+    @Override
     public void output(String out) {
         writer.print(out);
         writer.flush();
