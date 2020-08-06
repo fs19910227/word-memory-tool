@@ -1,4 +1,4 @@
-package com.fs.tool.memory.domain.service;
+package com.fs.tool.memory.domain.service.impl;
 
 import com.fs.tool.memory.core.Context;
 import com.fs.tool.memory.domain.bo.WordTestBO;

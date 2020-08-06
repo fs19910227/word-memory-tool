@@ -3,6 +3,8 @@ package com.fs.tool.memory.dao.repository;
 import com.fs.tool.memory.dao.model.CommonWordDO;
 import com.fs.tool.memory.dao.model.WordGroupDO;
 import com.fs.tool.memory.dao.query.Query;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 import javax.transaction.Transactional;
 import java.util.List;
@@ -31,6 +33,9 @@ public interface ICodeRepository {
     void save(CommonWordDO word);
 
     List<CommonWordDO> queryByCondition(Query condition);
+
+
+    Page<CommonWordDO> queryByCondition(Query condition, PageRequest pageRequest);
 
     Optional<CommonWordDO> queryOne(Query query);
 

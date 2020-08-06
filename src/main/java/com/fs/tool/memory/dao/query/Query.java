@@ -41,8 +41,10 @@ public class Query {
      */
     private Region passTimes;
 
+
     public static class Region {
         public int start = 0;
         public int end = Integer.MAX_VALUE;
     }
+
 }

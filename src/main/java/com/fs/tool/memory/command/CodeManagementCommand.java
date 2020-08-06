@@ -4,7 +4,6 @@ import org.springframework.shell.standard.ShellMethod;
 import org.springframework.shell.standard.ShellOption;
 
 import javax.validation.constraints.Size;
-import java.io.IOException;
 import java.util.List;
 
 /**
@@ -46,11 +45,13 @@ public interface CodeManagementCommand {
     );
 
 
+
     @ShellMethod(value = "memory test", key = {"t", "test"})
     void test(@ShellOption(defaultValue = "", value = {"-r", "-row", "-prefix"}, help = "code prefix match") @Size() String prefix,
+              @ShellOption(defaultValue = Integer.MAX_VALUE + "", value = "-limit", help = "words limit，default no limit") Integer limit,
               @ShellOption(defaultValue = "false", value = "--review", help = "review word，default false") Boolean isReview,
               @ShellOption(defaultValue = "false", value = "--random", help = "random word，default false") Boolean isRandom,
-              @ShellOption(defaultValue = "false", value = "--repeat", help = "repeat until remember at least once，default false") Boolean repeat) throws IOException;
+              @ShellOption(defaultValue = "false", value = "--repeat", help = "repeat until remember at least once，default false") Boolean repeat);
 
     @ShellMethod(value = "Delete all", key = "drop")
     String deleteAll();

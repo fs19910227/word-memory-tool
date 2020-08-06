@@ -9,6 +9,8 @@ import com.fs.tool.memory.dao.query.Mode;
 import com.fs.tool.memory.dao.query.Query;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -125,7 +127,7 @@ public class CodeRepository implements ICodeRepository {
     /**
      * 条件查询
      *
-     * @param condition 查询多条
+     * @param condition 条件
      * @return
      */
 
@@ -134,6 +136,20 @@ public class CodeRepository implements ICodeRepository {
         condition.setGroup(context.currentGroup);
         CodeSpecification codeSpecification = new CodeSpecification(condition);
         return codeRepository.findAll(codeSpecification);
+    }
+
+    /**
+     * 条件查询
+     *
+     * @param condition   条件
+     * @param pageRequest 分页条件
+     * @return
+     */
+    @Override
+    public Page<CommonWordDO> queryByCondition(Query condition, PageRequest pageRequest) {
+        condition.setGroup(context.currentGroup);
+        CodeSpecification codeSpecification = new CodeSpecification(condition);
+        return codeRepository.findAll(codeSpecification, pageRequest);
     }
 
     /**
@@ -230,6 +246,8 @@ public class CodeRepository implements ICodeRepository {
                     predicates.add(criteriaBuilder.isNull(root.get("definition")));
                 }
             }
+
+
             Predicate[] predicateArray = predicates.toArray(new Predicate[0]);
             query.where(predicateArray);
             return null;

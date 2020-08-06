@@ -9,11 +9,14 @@ import com.fs.tool.memory.dao.query.Query;
 import com.fs.tool.memory.dao.repository.ICodeRepository;
 import com.fs.tool.memory.domain.cmd.TestCmd;
 import com.fs.tool.memory.domain.service.IOService;
-import com.fs.tool.memory.domain.service.WordDomainService;
+import com.fs.tool.memory.domain.service.impl.WordDomainService;
 import com.fs.tool.memory.service.imports.DataImportService;
 import com.fs.tool.memory.service.init.DataInitService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.shell.standard.ShellCommandGroup;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
@@ -33,7 +36,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class CodeManagementCommandImpl implements CodeManagementCommand {
     @Autowired
-    private ICodeRepository codeManager;
+    private ICodeRepository codeRepo;
     @Autowired
     private DataInitService dataInitService;
     @Autowired
@@ -48,22 +51,22 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
     @Override
     @ShellMethod(value = "init data", key = "init")
     public void initData() {
-        if (codeManager.count(Query.builder().build()) > 0) {
+        if (codeRepo.count(Query.builder().build()) > 0) {
             consoleService.outputLn("group " + context.currentGroup + " already has data!,won't init");
             return;
         }
         List<CommonWordDO> commonWords = dataInitService.biInit(context.currentGroup, DataInitService.DEFAULT_ALPHABET_LIST);
-        codeManager.saveAll(commonWords);
+        codeRepo.saveAll(commonWords);
         consoleService.outputLn("init data,current group:" + context.currentGroup);
     }
 
     @ShellMethod(value = "show statistic info", key = {"info", "statistic"})
     @Override
     public String statistic() {
-        long total = codeManager.count(Query.builder().build());
-        double hasWords = codeManager.count(Query.builder().existDefinition(true).build());
-        double remembered = codeManager.count(Query.builder().isRemembered(true).build());
-        List<String> groups = codeManager.groups().stream().map(WordGroupDO::getName).collect(Collectors.toList());
+        long total = codeRepo.count(Query.builder().build());
+        double hasWords = codeRepo.count(Query.builder().existDefinition(true).build());
+        double remembered = codeRepo.count(Query.builder().isRemembered(true).build());
+        List<String> groups = codeRepo.groups().stream().map(WordGroupDO::getName).collect(Collectors.toList());
         String info = "当前分组:%s\n" +
                 "所有分组:%s\n" +
                 "联想编码总数:%d\n" +
@@ -79,7 +82,7 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
                               @ShellOption(value = "-e", defaultValue = "", help = "exist definition") Boolean existDefinition,
                               @ShellOption(value = "-r", defaultValue = "", help = "is remembered") Boolean remembered) {
         List<String> result = new ArrayList<>();
-        if (!codeManager.hasCodes()) {
+        if (!codeRepo.hasCodes()) {
             result.add("word not find");
             return result;
         }
@@ -93,7 +96,7 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
         } else {
             query.setCodeMode(Mode.PREFIX);
         }
-        return codeManager.queryByCondition(query).stream()
+        return codeRepo.queryByCondition(query).stream()
                 .map(CommonWordDO::toString)
                 .collect(Collectors.toList());
     }
@@ -102,7 +105,7 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
     @Override
     @ShellMethod(value = "edit word", key = {"edit", "e"})
     public String edit(@Size(min = 1) String code) {
-        CommonWordDO query = codeManager.queryOne(Query.builder().codeMode(Mode.EXACT).code(code.toUpperCase()).build()).orElse(null);
+        CommonWordDO query = codeRepo.queryOne(Query.builder().codeMode(Mode.EXACT).code(code.toUpperCase()).build()).orElse(null);
         String result;
         if (query == null) {
             result = "word not find";
@@ -114,7 +117,7 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
             result = "quit edit mode";
         } else {
             query.setDefinition(input.trim());
-            codeManager.save(query);
+            codeRepo.save(query);
             result = "word definition " + query.getDefinition() + " saved";
         }
         return result;
@@ -126,14 +129,14 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
                       @ShellOption(defaultValue = ShellOption.NULL) String definition,
                       @ShellOption(defaultValue = ShellOption.NULL) String description) {
         String upperCode = code.toUpperCase();
-        CommonWordDO oldWord = codeManager.queryOne(Query.builder().codeMode(Mode.EXACT).code(upperCode).build()).orElse(null);
+        CommonWordDO oldWord = codeRepo.queryOne(Query.builder().codeMode(Mode.EXACT).code(upperCode).build()).orElse(null);
         String result;
         if (oldWord != null) {
             result = "word already exist," + oldWord.toString();
             return result;
         }
         CommonWordDO commonWord = new CommonWordDO(upperCode, context.currentGroup, definition, description, false, 0, 0);
-        codeManager.save(commonWord);
+        codeRepo.save(commonWord);
         return "add word success";
     }
 
@@ -153,13 +156,14 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
         } else {
             query = builder.codeMode(Mode.EXACT).code(upperCode).build();
         }
-        int size = codeManager.deleteByCondition(query);
+        int size = codeRepo.deleteByCondition(query);
         return "deleted " + size;
     }
 
     @Override
     @ShellMethod(value = "memory test", key = {"t", "test"})
     public void test(@ShellOption(defaultValue = "", value = {"-r", "-row", "-prefix"}, help = "code prefix match") @Size() String prefix,
+                     @ShellOption(defaultValue = Integer.MAX_VALUE + "", value = "-limit", help = "words limit，default no limit") Integer limit,
                      @ShellOption(defaultValue = "false", value = "--review", help = "review word，default false") Boolean isReview,
                      @ShellOption(defaultValue = "false", value = "--random", help = "random word，default false") Boolean isRandom,
                      @ShellOption(defaultValue = "false", value = "--repeat", help = "repeat until remember at least once，default false") Boolean repeat) {
@@ -177,19 +181,21 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
         query.setExistDefinition(true);
         query.setCodeMode(Mode.PREFIX);
         query.setCode(prefix.toUpperCase());
-        List<CommonWordDO> codes = codeManager.queryByCondition(query);
+
+        PageRequest page = PageRequest.of(1, limit, Sort.by("passTime").ascending());
+        Page<CommonWordDO> commonWordDOS = codeRepo.queryByCondition(query, page);
 
         TestCmd testCmd = new TestCmd()
                 .setRandom(isRandom)
                 .setRepeatMode(repeat)
-                .setWordDOList(codes);
+                .setWordDOList(commonWordDOS.toList());
         wordDomainService.createTest(testCmd).start();
     }
 
     @Override
     @ShellMethod(value = "Delete all under current group", key = "drop")
     public String deleteAll() {
-        codeManager.clearAll();
+        codeRepo.clearAll();
         return "clear all data from group " + context.currentGroup;
     }
 
