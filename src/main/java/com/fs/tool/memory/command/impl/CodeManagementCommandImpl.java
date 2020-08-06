@@ -7,6 +7,7 @@ import com.fs.tool.memory.dao.model.WordGroupDO;
 import com.fs.tool.memory.dao.query.Mode;
 import com.fs.tool.memory.dao.query.Query;
 import com.fs.tool.memory.dao.repository.ICodeRepository;
+import com.fs.tool.memory.dao.repository.IGroupRepository;
 import com.fs.tool.memory.domain.cmd.TestCmd;
 import com.fs.tool.memory.domain.service.IOService;
 import com.fs.tool.memory.domain.service.impl.WordDomainService;
@@ -38,6 +39,8 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
     @Autowired
     private ICodeRepository codeRepo;
     @Autowired
+    private IGroupRepository groupRepository;
+    @Autowired
     private DataInitService dataInitService;
     @Autowired
     private DataImportService dataImportService;
@@ -66,19 +69,21 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
         long total = codeRepo.count(Query.builder().build());
         double hasWords = codeRepo.count(Query.builder().existDefinition(true).build());
         double remembered = codeRepo.count(Query.builder().isRemembered(true).build());
-        List<String> groups = codeRepo.groups().stream().map(WordGroupDO::getName).collect(Collectors.toList());
-        String info = "当前分组:%s\n" +
-                "所有分组:%s\n" +
-                "联想编码总数:%d\n" +
-                "有定义的联想词:%.0f,占比%.2f%%\n" +
-                "已记住联想词数:%.0f,占比%.2f%%\n";
-        return String.format(info, context.currentGroup, groups, total, hasWords, hasWords / total * 100, remembered, remembered / total * 100);
+        List<String> groups = groupRepository.groups().stream().map(WordGroupDO::getName).collect(Collectors.toList());
+        WordGroupDO defaultGroup = groupRepository.defaultGroup().orElse(new WordGroupDO());
+        String info = "current group:%s\n" +
+                "default group:%s\n" +
+                "all groups:%s\n" +
+                "total word counts:%d\n" +
+                "words have definition:%.0f,ratio%.1f%%\n" +
+                "words have remembered:%.0f,ratio%.1f%%\n";
+        return String.format(info, context.currentGroup, defaultGroup.getName(), groups, total, hasWords, hasWords / total * 100, remembered, remembered / total * 100);
     }
 
     @Override
     @ShellMethod(value = "query word by code", key = {"query", "q"})
     public List<String> query(@ShellOption(defaultValue = ShellOption.NULL) String code,
-                              @ShellOption(defaultValue = "false", value = {"-suffix", "-s"}, help = "suffix match,defult false") boolean suffix,
+                              @ShellOption(defaultValue = "false", value = {"-suffix", "-s"}, help = "suffix match,default false") boolean suffix,
                               @ShellOption(value = "-e", defaultValue = "", help = "exist definition") Boolean existDefinition,
                               @ShellOption(value = "-r", defaultValue = "", help = "is remembered") Boolean remembered) {
         List<String> result = new ArrayList<>();
@@ -144,7 +149,7 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
     @ShellMethod(value = "delete word by code", key = {"delete", "d"})
     public String delete(@ShellOption(value = {"-value", "-v"}, help = "exact match") String code,
                          @ShellOption(defaultValue = "false", value = {"-prefix", "-p"}, help = "prefix match,default false") boolean prefix,
-                         @ShellOption(defaultValue = "false", value = {"-suffix", "-s"}, help = "suffix match,defult false") boolean suffix
+                         @ShellOption(defaultValue = "false", value = {"-suffix", "-s"}, help = "suffix match,default false") boolean suffix
     ) {
         Query.QueryBuilder builder = Query.builder();
         String upperCode = code.toUpperCase();
@@ -200,7 +205,7 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
     }
 
     @Override
-    @ShellMethod(value = "import data using execel file", key = "import")
+    @ShellMethod(value = "import data using excel file", key = "import")
     public void importData(@ShellOption(value = "-f", defaultValue = "") String file,
                            @ShellOption(value = "-o", defaultValue = "false") Boolean overwrite) {
         String fileName = file.equals("") ? "default.xlsx" : file;

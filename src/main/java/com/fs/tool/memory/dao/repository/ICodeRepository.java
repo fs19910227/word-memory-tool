@@ -1,7 +1,6 @@
 package com.fs.tool.memory.dao.repository;
 
 import com.fs.tool.memory.dao.model.CommonWordDO;
-import com.fs.tool.memory.dao.model.WordGroupDO;
 import com.fs.tool.memory.dao.query.Query;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -15,14 +14,6 @@ import java.util.Optional;
  * @date 2020/8/6 0006 20:43
  */
 public interface ICodeRepository {
-    boolean existGroup(WordGroupDO wordGroup);
-
-    Optional<WordGroupDO> findGroup(String name);
-
-    void addGroup(WordGroupDO wordGroup);
-
-    List<WordGroupDO> groups();
-
     boolean hasCodes();
 
     @Transactional

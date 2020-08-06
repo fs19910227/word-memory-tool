@@ -2,6 +2,7 @@ package com.fs.tool.memory.dao.model;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.Accessors;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -17,6 +18,7 @@ import javax.persistence.Table;
 @Data
 @NoArgsConstructor
 @Table(name = "word_group")
+@Accessors(chain = true)
 public class WordGroupDO {
     @Id
     private String id;
@@ -28,6 +30,10 @@ public class WordGroupDO {
      * word group
      */
     private String description;
+    /**
+     * 是否default
+     */
+    private Boolean isDefault;
 
     @Override
     public String toString() {

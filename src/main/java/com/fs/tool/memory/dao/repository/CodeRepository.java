@@ -2,13 +2,10 @@ package com.fs.tool.memory.dao.repository;
 
 import com.fs.tool.memory.core.Context;
 import com.fs.tool.memory.dao.mapper.CodeMapper;
-import com.fs.tool.memory.dao.mapper.GroupMapper;
 import com.fs.tool.memory.dao.model.CommonWordDO;
-import com.fs.tool.memory.dao.model.WordGroupDO;
 import com.fs.tool.memory.dao.query.Mode;
 import com.fs.tool.memory.dao.query.Query;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
@@ -23,7 +20,6 @@ import javax.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * 联想词管理器
@@ -36,52 +32,8 @@ public class CodeRepository implements ICodeRepository {
     @Autowired
     private CodeMapper codeRepository;
     @Autowired
-    private GroupMapper groupRepository;
-    @Autowired
     private Context context;
 
-    /**
-     * 是否存在分组
-     */
-    @Override
-    public boolean existGroup(WordGroupDO wordGroup) {
-        Example<WordGroupDO> of = Example.of(wordGroup);
-        of.getMatcher().withMatcher("name", matcher -> matcher.exact());
-        return groupRepository.exists(of);
-    }
-
-    /**
-     * 获取分组
-     *
-     * @return
-     */
-    @Override
-    public Optional<WordGroupDO> findGroup(String name) {
-        WordGroupDO wordGroup = new WordGroupDO();
-        wordGroup.setName(name);
-        Example<WordGroupDO> of = Example.of(wordGroup);
-        of.getMatcher().withMatcher("name", matcher -> matcher.exact());
-        return groupRepository.findOne(of);
-    }
-
-    /**
-     * 新增分组
-     */
-    @Override
-    public void addGroup(WordGroupDO wordGroup) {
-        wordGroup.setId(UUID.randomUUID().toString());
-        groupRepository.save(wordGroup);
-    }
-
-    /**
-     * 所有分组信息
-     *
-     * @return
-     */
-    @Override
-    public List<WordGroupDO> groups() {
-        return groupRepository.findAll();
-    }
 
     /**
      * 是否有联想词数据
