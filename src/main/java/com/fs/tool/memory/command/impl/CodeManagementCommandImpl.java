@@ -187,7 +187,7 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
         query.setCodeMode(Mode.PREFIX);
         query.setCode(prefix.toUpperCase());
 
-        PageRequest page = PageRequest.of(1, limit, Sort.by("passTime").ascending());
+        PageRequest page = PageRequest.of(0, limit, Sort.by("passTime").ascending());
         Page<CommonWordDO> commonWordDOS = codeRepo.queryByCondition(query, page);
 
         TestCmd testCmd = new TestCmd()
