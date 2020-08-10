@@ -6,6 +6,7 @@ import com.fs.tool.memory.dao.repository.ICodeRepository;
 import com.fs.tool.memory.domain.cmd.TestCmd;
 import com.fs.tool.memory.domain.enums.TestStatus;
 import com.fs.tool.memory.domain.service.IOService;
+import org.jline.reader.LineReader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -41,6 +42,7 @@ public class WordTestBO {
     private boolean isRandom;
     private TestStatus testStatus;
     private int repeatTimes;
+    private LineReader reader;
 
     /**
      * 上一个
@@ -105,7 +107,7 @@ public class WordTestBO {
     private void test(CommonWordDO code) {
         consoleService.outputLn("=========================================================================");
         consoleService.outputLn(String.format("current code:%s,please input definition.(Quit:q,Skip:Enter,Previous:p,Mark remembered:r)", code.getKey()));
-        String input = consoleService.readLine().toLowerCase();
+        String input = consoleService.readLine(reader).toLowerCase();
         switch (input) {
             case "p":
                 doPrevious();
@@ -140,10 +142,12 @@ public class WordTestBO {
         this.rememberedWords.clear();
         this.currentIndex = 0;
         this.repeatTimes = 0;
+        this.reader = consoleService.createReader();
         testStatus = TestStatus.IDLE;
         if (isRandom) {
             Collections.shuffle(words);
         }
+
         return this;
     }
 

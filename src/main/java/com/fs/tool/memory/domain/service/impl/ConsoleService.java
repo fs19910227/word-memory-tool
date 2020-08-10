@@ -2,11 +2,13 @@ package com.fs.tool.memory.domain.service.impl;
 
 import com.fs.tool.memory.domain.service.IOService;
 import org.jline.reader.LineReader;
+import org.jline.reader.LineReaderBuilder;
 import org.jline.terminal.Terminal;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.io.PrintWriter;
 
 /**
@@ -19,10 +21,18 @@ import java.io.PrintWriter;
 public class ConsoleService implements InitializingBean, IOService {
     @Autowired
     private Terminal terminal;
-    @Autowired
-    private LineReader reader;
+
+    private LineReader DefaultReader;
 
     private PrintWriter writer;
+
+
+    @Override
+    public LineReader createReader() {
+        return LineReaderBuilder.builder()
+                .terminal(terminal)
+                .build();
+    }
 
     /**
      * 读入一行数据
@@ -31,7 +41,7 @@ public class ConsoleService implements InitializingBean, IOService {
      */
     @Override
     public String readLine(String prompt) {
-        return reader.readLine(prompt);
+        return DefaultReader.readLine(prompt);
     }
 
     /**
@@ -39,7 +49,37 @@ public class ConsoleService implements InitializingBean, IOService {
      */
     @Override
     public String readLine() {
+        return DefaultReader.readLine();
+    }
+
+    /**
+     * 读入一行数据,使用指定的reader
+     *
+     * @param reader
+     * @param prompt 提示信息
+     */
+    @Override
+    public String readLine(LineReader reader, String prompt) {
+        return reader.readLine(prompt);
+    }
+
+    @Override
+    public String readLine(LineReader reader) {
         return reader.readLine();
+    }
+
+    /**
+     * 清除历史
+     *
+     * @param reader
+     */
+    @Override
+    public void clearHistory(LineReader reader) {
+        try {
+            reader.getHistory().purge();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -65,8 +105,9 @@ public class ConsoleService implements InitializingBean, IOService {
     }
 
     @Override
-    public void afterPropertiesSet() throws Exception {
+    public void afterPropertiesSet() {
+        terminal.echo(false);
         writer = terminal.writer();
-
+        DefaultReader = LineReaderBuilder.builder().terminal(terminal).build();
     }
 }

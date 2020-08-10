@@ -39,7 +39,8 @@ public class WordDomainService implements ApplicationContextAware {
      * @return
      */
     public WordTestBO resume() {
-        return context.savedTestMap.get(context.currentGroup);
+        WordTestBO wordTestBO = context.savedTestMap.get(context.currentGroup);
+        return wordTestBO;
     }
 
     /**
