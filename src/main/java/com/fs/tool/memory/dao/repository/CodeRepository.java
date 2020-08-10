@@ -117,6 +117,11 @@ public class CodeRepository implements ICodeRepository {
         return codeRepository.findOne(codeSpecification);
     }
 
+    @Override
+    public Optional<CommonWordDO> queryById(String id) {
+        return codeRepository.findById(id);
+    }
+
     /**
      * 统计count
      */

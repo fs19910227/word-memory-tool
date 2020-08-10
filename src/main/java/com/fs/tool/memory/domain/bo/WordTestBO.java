@@ -2,6 +2,8 @@ package com.fs.tool.memory.domain.bo;
 
 import com.fs.tool.memory.core.Context;
 import com.fs.tool.memory.dao.model.CommonWordDO;
+import com.fs.tool.memory.dao.query.Mode;
+import com.fs.tool.memory.dao.query.Query;
 import com.fs.tool.memory.dao.repository.ICodeRepository;
 import com.fs.tool.memory.domain.cmd.TestCmd;
 import com.fs.tool.memory.domain.enums.TestStatus;
@@ -11,10 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
@@ -34,9 +34,9 @@ public class WordTestBO {
     private Context context;
     private int currentIndex = 0;
 
-    private Set<CommonWordDO> rememberedWords = new HashSet<>();
+    private Set<String> rememberedWordCodes = new HashSet<>();
 
-    private List<CommonWordDO> words;
+    private List<String> wordCodes;
 
     private boolean repeat;
     private boolean isRandom;
@@ -106,7 +106,8 @@ public class WordTestBO {
 
     private void test(CommonWordDO code) {
         consoleService.outputLn("=========================================================================");
-        consoleService.outputLn(String.format("current code:%s,please input definition.(Quit:q,Skip:Enter,Previous:p,Mark remembered:r)", code.getKey()));
+        consoleService.outputLn(String.format("current code:%s." +
+                "\nplease input definition.(Quit:q,Skip:Enter,Previous:p,Mark remembered:r)", code));
         String input = consoleService.readLine(reader).toLowerCase();
         switch (input) {
             case "p":
@@ -123,7 +124,7 @@ public class WordTestBO {
                 break;
             default:
                 if (judgeAnswer(code, input.toUpperCase())) {
-                    rememberedWords.add(code);
+                    rememberedWordCodes.add(code.getKey());
                 }
 
         }
@@ -136,16 +137,16 @@ public class WordTestBO {
      * @return
      */
     public WordTestBO init(TestCmd cmd) {
-        this.words = cmd.getWordDOList();
+        this.wordCodes = cmd.getWordDOList().stream().map(CommonWordDO::getKey).collect(Collectors.toList());
         this.repeat = cmd.isRepeatMode();
         this.isRandom = cmd.isRandom();
-        this.rememberedWords.clear();
+        this.rememberedWordCodes.clear();
         this.currentIndex = 0;
         this.repeatTimes = 0;
         this.reader = consoleService.createReader();
         testStatus = TestStatus.IDLE;
         if (isRandom) {
-            Collections.shuffle(words);
+            Collections.shuffle(wordCodes);
         }
 
         return this;
@@ -158,18 +159,28 @@ public class WordTestBO {
         consoleService.outputLn("ENTER TEST MODE\n" +
                 "random " + isRandom + "\n" +
                 "repeat " + repeat + "\n" +
-                "total codes：" + words.size() + "\n" +
-                "remembered codes: " + rememberedWords.size()
+                "total codes：" + wordCodes.size() + "\n" +
+                "remembered codes: " + rememberedWordCodes.size()
         );
         testStatus = TestStatus.RUNNING;
         boolean needRepeat = repeat;
         do {
-            for (; currentIndex < words.size(); currentIndex++) {
-                CommonWordDO code = words.get(currentIndex);
-                if (rememberedWords.contains(code)) {
+            for (; currentIndex < wordCodes.size(); currentIndex++) {
+                String code = wordCodes.get(currentIndex);
+                if (rememberedWordCodes.contains(code)) {
                     continue;
                 }
-                test(code);
+                Query query = Query.builder()
+                        .codeMode(Mode.EXACT)
+                        .code(code)
+                        .build();
+                Optional<CommonWordDO> commonWordDO = codeRepository.queryOne(query);
+                if (!commonWordDO.isPresent()) {
+                    consoleService.outputLn(String.format("Can not find word!!!key=%s", code));
+                    rememberedWordCodes.add(code);
+                    continue;
+                }
+                test(commonWordDO.get());
                 if (testStatus == TestStatus.IDLE) {
                     context.savedTestMap.remove(context.currentGroup);
                     return;
@@ -179,8 +190,8 @@ public class WordTestBO {
                     return;
                 }
             }
-            int remembered = rememberedWords.size();
-            int rest = words.size() - remembered;
+            int remembered = rememberedWordCodes.size();
+            int rest = wordCodes.size() - remembered;
             String out = String.format("Test complete %d cycle.remembered:%d,rest:%d", ++repeatTimes, remembered, rest);
             consoleService.outputLn(out);
             if (rest == 0) {

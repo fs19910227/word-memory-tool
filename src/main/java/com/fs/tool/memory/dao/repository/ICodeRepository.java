@@ -30,6 +30,9 @@ public interface ICodeRepository {
 
     Optional<CommonWordDO> queryOne(Query query);
 
+
+    Optional<CommonWordDO> queryById(String key);
+
     long count(Query query);
 
     void delete(String id);
