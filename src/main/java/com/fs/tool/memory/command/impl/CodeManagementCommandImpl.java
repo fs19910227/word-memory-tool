@@ -167,11 +167,11 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
 
     @Override
     @ShellMethod(value = "memory test", key = {"t", "test"})
-    public void test(@ShellOption(defaultValue = "", value = {"-r", "-row", "-prefix"}, help = "code prefix match") @Size() String prefix,
+    public void test(@ShellOption(defaultValue = "", help = "code prefix match") @Size() String prefix,
                      @ShellOption(defaultValue = Integer.MAX_VALUE + "", value = "-limit", help = "words limit，default no limit") Integer limit,
-                     @ShellOption(defaultValue = "false", value = "--review", help = "review word，default false") Boolean isReview,
-                     @ShellOption(defaultValue = "false", value = "--random", help = "random word，default false") Boolean isRandom,
-                     @ShellOption(defaultValue = "false", value = "--repeat", help = "repeat until remember at least once，default false") Boolean repeat) {
+                     @ShellOption(defaultValue = "false", value = "-review", help = "review word，default false") Boolean isReview,
+                     @ShellOption(defaultValue = "false", value = "-random", help = "random word，default false") Boolean isRandom,
+                     @ShellOption(defaultValue = "true", value = "-repeat", help = "repeat until remember at least once，default false") Boolean repeat) {
         if (wordDomainService.hasSavedTest()) {
             String out = "Detect has staging test,continue? y/n(default y)";
             String ok = consoleService.readLine(out);

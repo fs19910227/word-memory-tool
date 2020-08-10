@@ -186,6 +186,8 @@ public class WordTestBO {
             if (rest == 0) {
                 needRepeat = false;
             }
+            //reset
+            currentIndex = 0;
         } while (needRepeat);
     }
 }
