@@ -107,7 +107,7 @@ public class WordTestBO {
     private void test(CommonWordDO code) {
         consoleService.outputLn("=========================================================================");
         consoleService.outputLn(String.format("current code:%s." +
-                "\nplease input definition.(Quit:q,Skip:Enter,Previous:p,Mark remembered:r)", code));
+                "\nplease input definition.(Quit:q,Skip:Enter,Previous:p,Mark remembered:r)", code.getKey()));
         String input = consoleService.readLine(reader).toLowerCase();
         switch (input) {
             case "p":
