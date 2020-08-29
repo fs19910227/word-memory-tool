@@ -14,7 +14,6 @@ import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
 import org.springframework.shell.standard.ShellOption;
 
-import javax.validation.constraints.Size;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -45,24 +44,21 @@ public class GroupManagementCommandImpl implements GroupManagementCommand, Appli
     @ShellMethod(value = "switch group", key = {"use"})
     public void chooseGroup(@ShellOption(value = {"-g", "-group"},
             defaultValue = DEFAULT_GROUP) String group) {
+        boolean chooseDefault = group.equals(DEFAULT_GROUP);
         Optional<WordGroupDO> optional;
-        if (group.equals(DEFAULT_GROUP)) {
+        if (chooseDefault) {
             optional = groupRepository.defaultGroup();
         } else {
             optional = groupRepository.queryOne(group);
         }
-        WordGroupDO wordGroup;
-        if (!optional.isPresent()) {
-            wordGroup = new WordGroupDO();
-            wordGroup.setName(group);
-            if (!groupRepository.exist(wordGroup)) {
-                wordGroup.setIsDefault(false);
-                wordGroup.setDescription(group);
-                groupRepository.add(wordGroup);
-            }
-        } else {
-            wordGroup = optional.get();
-        }
+        WordGroupDO wordGroup = optional.orElseGet(() -> {
+            WordGroupDO wg = new WordGroupDO()
+                    .setName(group)
+                    .setIsDefault(chooseDefault)
+                    .setDescription(group);
+            groupRepository.add(wg);
+            return wg;
+        });
         context.currentGroup = wordGroup.getName();
         consoleService.outputLn("change to group :" + wordGroup.getName());
     }
@@ -74,17 +70,22 @@ public class GroupManagementCommandImpl implements GroupManagementCommand, Appli
     }
 
     @Override
-    @ShellMethod(value = "delete group by name", key = {"delete-group", "dg"})
+
+    @ShellMethod(value = "delete group by name", key = {"group-delete", "dg"})
     public String delete(@ShellOption(value = {"-name"}, help = "exact match") String name) {
         groupRepository.queryOne(name).ifPresent(group -> {
             groupRepository.deleteById(group.getId());
+            chooseGroup(DEFAULT_GROUP);
         });
         return "ok";
     }
 
     @Override
-    @ShellMethod(value = "edit  group", key = {"edit-group", "eg"})
-    public String edit(@Size(min = 1) String name) {
+    @ShellMethod(value = "edit  group", key = {"group-edit"})
+    public String edit(@ShellOption(defaultValue = ShellOption.NULL) String name) {
+        if (name == null) {
+            name = context.currentGroup;
+        }
         Optional<WordGroupDO> group = groupRepository.queryOne(name);
         String result;
         if (!group.isPresent()) {

@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 /**
+ * 单词测试 bo
  * @author zhaofushan
  * @date 2020/8/6 0006 20:33
  */
@@ -171,6 +172,7 @@ public class WordTestBO {
                     continue;
                 }
                 Query query = Query.builder()
+                        .group(context.currentGroup)
                         .codeMode(Mode.EXACT)
                         .code(code)
                         .build();

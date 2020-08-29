@@ -54,21 +54,23 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
     @Override
     @ShellMethod(value = "init data", key = "init")
     public void initData() {
-        if (codeRepo.count(Query.builder().build()) > 0) {
-            consoleService.outputLn("group " + context.currentGroup + " already has data!,won't init");
+        String currentGroup = context.currentGroup;
+        if (codeRepo.count(Query.builder().group(currentGroup).build()) > 0) {
+            consoleService.outputLn("group " + currentGroup + " already has data!,won't init");
             return;
         }
-        List<CommonWordDO> commonWords = dataInitService.biInit(context.currentGroup, DataInitService.DEFAULT_ALPHABET_LIST);
+        List<CommonWordDO> commonWords = dataInitService.biInit(currentGroup, DataInitService.DEFAULT_ALPHABET_LIST);
         codeRepo.saveAll(commonWords);
-        consoleService.outputLn("init data,current group:" + context.currentGroup);
+        consoleService.outputLn("init data,current group:" + currentGroup);
     }
 
     @ShellMethod(value = "show statistic info", key = {"info", "statistic"})
     @Override
     public String statistic() {
-        long total = codeRepo.count(Query.builder().build());
-        double hasWords = codeRepo.count(Query.builder().existDefinition(true).build());
-        double remembered = codeRepo.count(Query.builder().isRemembered(true).build());
+        String currentGroup = context.currentGroup;
+        long total = codeRepo.count(Query.builder().group(currentGroup).build());
+        double hasWords = codeRepo.count(Query.builder().group(currentGroup).existDefinition(true).build());
+        double remembered = codeRepo.count(Query.builder().group(currentGroup).isRemembered(true).build());
         List<String> groups = groupRepository.groups().stream().map(WordGroupDO::getName).collect(Collectors.toList());
         WordGroupDO defaultGroup = groupRepository.defaultGroup().orElse(new WordGroupDO());
         String info = "current group:%s\n" +
@@ -77,7 +79,7 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
                 "total word counts:%d\n" +
                 "words have definition:%.0f,ratio%.1f%%\n" +
                 "words have remembered:%.0f,ratio%.1f%%\n";
-        return String.format(info, context.currentGroup, defaultGroup.getName(), groups, total, hasWords, hasWords / total * 100, remembered, remembered / total * 100);
+        return String.format(info, currentGroup, defaultGroup.getName(), groups, total, hasWords, hasWords / total * 100, remembered, remembered / total * 100);
     }
 
     @Override
@@ -87,7 +89,7 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
                               @ShellOption(value = "-e", defaultValue = "", help = "exist definition") Boolean existDefinition,
                               @ShellOption(value = "-r", defaultValue = "", help = "is remembered") Boolean remembered) {
         List<String> result = new ArrayList<>();
-        if (!codeRepo.hasCodes()) {
+        if (!codeRepo.hasCodes(context.currentGroup)) {
             result.add("word not find");
             return result;
         }
@@ -96,6 +98,7 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
         query.setExistDefinition(existDefinition);
         query.setIsRemembered(remembered);
         query.setCode(code);
+        query.setGroup(context.currentGroup);
         if (suffix) {
             query.setCodeMode(Mode.SUFFIX);
         } else {
@@ -110,7 +113,12 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
     @Override
     @ShellMethod(value = "edit word", key = {"edit", "e"})
     public String edit(@Size(min = 1) String code) {
-        CommonWordDO query = codeRepo.queryOne(Query.builder().codeMode(Mode.EXACT).code(code.toUpperCase()).build()).orElse(null);
+        Query build = Query.builder()
+                .codeMode(Mode.EXACT)
+                .group(context.currentGroup)
+                .code(code.toUpperCase())
+                .build();
+        CommonWordDO query = codeRepo.queryOne(build).orElse(null);
         String result;
         if (query == null) {
             result = "word not find";
@@ -134,7 +142,12 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
                       @ShellOption(defaultValue = ShellOption.NULL) String definition,
                       @ShellOption(defaultValue = ShellOption.NULL) String description) {
         String upperCode = code.toUpperCase();
-        CommonWordDO oldWord = codeRepo.queryOne(Query.builder().codeMode(Mode.EXACT).code(upperCode).build()).orElse(null);
+        Query build = Query.builder()
+                .codeMode(Mode.EXACT)
+                .group(context.currentGroup)
+                .code(upperCode)
+                .build();
+        CommonWordDO oldWord = codeRepo.queryOne(build).orElse(null);
         String result;
         if (oldWord != null) {
             result = "word already exist," + oldWord.toString();
@@ -161,6 +174,7 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
         } else {
             query = builder.codeMode(Mode.EXACT).code(upperCode).build();
         }
+        query.setGroup(context.currentGroup);
         int size = codeRepo.deleteByCondition(query);
         return "deleted " + size;
     }
@@ -186,6 +200,7 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
         query.setExistDefinition(true);
         query.setCodeMode(Mode.PREFIX);
         query.setCode(prefix.toUpperCase());
+        query.setCode(context.currentGroup);
 
         PageRequest page = PageRequest.of(0, limit, Sort.by("passTime").ascending());
         Page<CommonWordDO> commonWordDOS = codeRepo.queryByCondition(query, page);
@@ -200,8 +215,9 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
     @Override
     @ShellMethod(value = "Delete all under current group", key = "drop")
     public String deleteAll() {
-        codeRepo.clearAll();
-        return "clear all data from group " + context.currentGroup;
+        String currentGroup = context.currentGroup;
+        codeRepo.clearAll(currentGroup);
+        return "clear all data from group " + currentGroup;
     }
 
     @Override

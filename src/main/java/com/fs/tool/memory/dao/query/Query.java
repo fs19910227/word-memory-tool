@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.validation.constraints.NotNull;
+
 /**
  * 查询条件
  *
@@ -35,6 +37,7 @@ public class Query {
     /**
      * 分组信息
      */
+    @NotNull
     private String group;
     /**
      * 通过测试的次数区间

@@ -1,6 +1,5 @@
 package com.fs.tool.memory.dao.repository;
 
-import com.fs.tool.memory.core.Context;
 import com.fs.tool.memory.dao.mapper.CodeMapper;
 import com.fs.tool.memory.dao.model.CommonWordDO;
 import com.fs.tool.memory.dao.query.Mode;
@@ -31,28 +30,28 @@ import java.util.Optional;
 public class CodeRepository implements ICodeRepository {
     @Autowired
     private CodeMapper codeRepository;
-    @Autowired
-    private Context context;
-
 
     /**
      * 是否有联想词数据
      *
+     * @param group
      * @return
      */
     @Override
-    public boolean hasCodes() {
-        return count(Query.builder().group(context.currentGroup).build()) > 0;
+    public boolean hasCodes(String group) {
+        return count(Query.builder().group(group).build()) > 0;
     }
 
 
     /**
      * 清除group 下所有联想词
+     *
+     * @param group group
      */
     @Override
     @Transactional
-    public void clearAll() {
-        codeRepository.deleteAllByWordGroup(context.currentGroup);
+    public void clearAll(String group) {
+        codeRepository.deleteAllByWordGroup(group);
     }
 
 
@@ -76,6 +75,7 @@ public class CodeRepository implements ICodeRepository {
         codeRepository.save(word);
     }
 
+
     /**
      * 条件查询
      *
@@ -85,7 +85,6 @@ public class CodeRepository implements ICodeRepository {
 
     @Override
     public List<CommonWordDO> queryByCondition(Query condition) {
-        condition.setGroup(context.currentGroup);
         CodeSpecification codeSpecification = new CodeSpecification(condition);
         return codeRepository.findAll(codeSpecification);
     }
@@ -99,7 +98,6 @@ public class CodeRepository implements ICodeRepository {
      */
     @Override
     public Page<CommonWordDO> queryByCondition(Query condition, PageRequest pageRequest) {
-        condition.setGroup(context.currentGroup);
         CodeSpecification codeSpecification = new CodeSpecification(condition);
         return codeRepository.findAll(codeSpecification, pageRequest);
     }
@@ -112,7 +110,6 @@ public class CodeRepository implements ICodeRepository {
      */
     @Override
     public Optional<CommonWordDO> queryOne(Query query) {
-        query.setGroup(context.currentGroup);
         CodeSpecification codeSpecification = new CodeSpecification(query);
         return codeRepository.findOne(codeSpecification);
     }
@@ -127,9 +124,14 @@ public class CodeRepository implements ICodeRepository {
      */
     @Override
     public long count(Query query) {
-        query.setGroup(context.currentGroup);
         CodeSpecification codeSpecification = new CodeSpecification(query);
         return codeRepository.count(codeSpecification);
+    }
+
+    @Override
+    public boolean exist(Query build) {
+        CodeSpecification codeSpecification = new CodeSpecification(build);
+        return codeRepository.count(codeSpecification) > 0;
     }
 
     /**
@@ -150,7 +152,6 @@ public class CodeRepository implements ICodeRepository {
      */
     @Override
     public int deleteByCondition(Query query) {
-        query.setGroup(context.currentGroup);
         CodeSpecification codeSpecification = new CodeSpecification(query);
         List<CommonWordDO> all = codeRepository.findAll(codeSpecification);
         for (CommonWordDO commonWord : all) {
@@ -179,6 +180,9 @@ public class CodeRepository implements ICodeRepository {
             String code = condition.getCode();
             if (!StringUtils.isEmpty(code)) {
                 Mode codeMode = condition.getCodeMode();
+                if (codeMode == null) {
+                    codeMode = Mode.EXACT;
+                }
                 switch (codeMode) {
                     case EXACT:
                         predicates.add(criteriaBuilder.equal(root.get("key"), code));

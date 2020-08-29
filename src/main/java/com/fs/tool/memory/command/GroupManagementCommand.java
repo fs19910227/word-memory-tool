@@ -3,7 +3,6 @@ package com.fs.tool.memory.command;
 import org.springframework.shell.standard.ShellMethod;
 import org.springframework.shell.standard.ShellOption;
 
-import javax.validation.constraints.Size;
 import java.util.List;
 
 /**
@@ -17,16 +16,14 @@ public interface GroupManagementCommand {
 
     String DEFAULT_GROUP = "DEFAULT";
 
-    @ShellMethod(value = "switch group", key = {"use"})
-    void chooseGroup(@ShellOption(value = {"-g", "-group"},
-            defaultValue = DEFAULT_GROUP) String group);
+    void chooseGroup(String group);
 
     @ShellMethod(value = "list all groups", key = {"groups"})
     List<String> groups();
 
-    @ShellMethod(value = "delete group by name", key = {"delete-group", "dg"})
+    @ShellMethod(value = "delete group by name", key = {"group-delete", "dg"})
     String delete(@ShellOption(value = {"-name"}, help = "exact match") String name);
 
-    @ShellMethod(value = "edit  group", key = {"groups"})
-    String edit(@Size(min = 1) String name);
+    @ShellMethod(value = "edit  group", key = {"group-edit"})
+    String edit(@ShellOption(defaultValue = ShellOption.NULL) String name);
 }

@@ -31,9 +31,22 @@ public class GroupRepository implements IGroupRepository {
     @Override
     public Optional<WordGroupDO> defaultGroup() {
         WordGroupDO wordGroup = new WordGroupDO();
-        wordGroup.setIsDefault(true);
         Example<WordGroupDO> of = Example.of(wordGroup);
-        return groupRepository.findAll(of).stream().findAny();
+        List<WordGroupDO> all = groupRepository.findAll(of);
+        if (all.isEmpty()) {
+            return Optional.empty();
+        }
+        Optional<WordGroupDO> any = all.stream()
+                .filter(WordGroupDO::getIsDefault)
+                .findAny();
+        if (!any.isPresent()) {
+            WordGroupDO wordGroupDO = all.get(0);
+            wordGroupDO.setIsDefault(true);
+            groupRepository.save(wordGroupDO);
+            return Optional.of(wordGroupDO);
+        } else {
+            return any;
+        }
     }
 
     /**

@@ -14,10 +14,10 @@ import java.util.Optional;
  * @date 2020/8/6 0006 20:43
  */
 public interface ICodeRepository {
-    boolean hasCodes();
+    boolean hasCodes(String group);
 
     @Transactional
-    void clearAll();
+    void clearAll(String group);
 
     void saveAll(List<CommonWordDO> commonWords);
 
@@ -30,7 +30,6 @@ public interface ICodeRepository {
 
     Optional<CommonWordDO> queryOne(Query query);
 
-
     Optional<CommonWordDO> queryById(String key);
 
     long count(Query query);
@@ -38,4 +37,6 @@ public interface ICodeRepository {
     void delete(String id);
 
     int deleteByCondition(Query query);
+
+    boolean exist(Query build);
 }
