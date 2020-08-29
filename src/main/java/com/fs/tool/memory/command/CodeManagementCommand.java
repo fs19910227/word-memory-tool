@@ -20,7 +20,7 @@ public interface CodeManagementCommand {
 
 
     @ShellMethod(value = "show statistic info", key = {"info", "statistic"})
-    String statistic();
+    String statistic(String group);
 
     @ShellMethod(value = "query word by code", key = {"query", "q"})
     List<String> query(@ShellOption(defaultValue = ShellOption.NULL) String code,

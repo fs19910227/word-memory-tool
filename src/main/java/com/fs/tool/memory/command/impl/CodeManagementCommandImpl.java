@@ -66,20 +66,20 @@ public class CodeManagementCommandImpl implements CodeManagementCommand {
 
     @ShellMethod(value = "show statistic info", key = {"info", "statistic"})
     @Override
-    public String statistic() {
-        String currentGroup = context.currentGroup;
+    public String statistic(@ShellOption(defaultValue = ShellOption.NULL) String group) {
+        String currentGroup = group == null ? context.currentGroup : group;
         long total = codeRepo.count(Query.builder().group(currentGroup).build());
         double hasWords = codeRepo.count(Query.builder().group(currentGroup).existDefinition(true).build());
         double remembered = codeRepo.count(Query.builder().group(currentGroup).isRemembered(true).build());
         List<String> groups = groupRepository.groups().stream().map(WordGroupDO::getName).collect(Collectors.toList());
         WordGroupDO defaultGroup = groupRepository.defaultGroup().orElse(new WordGroupDO());
-        String info = "current group:%s\n" +
-                "default group:%s\n" +
-                "all groups:%s\n" +
+        String info = "group:[%s]\n" +
+                "groups:%s\n" +
+                "========================================\n" +
                 "total word counts:%d\n" +
                 "words have definition:%.0f,ratio%.1f%%\n" +
                 "words have remembered:%.0f,ratio%.1f%%\n";
-        return String.format(info, currentGroup, defaultGroup.getName(), groups, total, hasWords, hasWords / total * 100, remembered, remembered / total * 100);
+        return String.format(info, defaultGroup.getName(), groups, total, hasWords, hasWords / total * 100, remembered, remembered / total * 100);
     }
 
     @Override
